@@ -29,23 +29,45 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Admin login with rate limiting
+// Admin login with rate limiting and bcrypt
 router.post('/login', loginLimiter, async (req, res) => {
+    const bcrypt = require('bcrypt');
     const { username, password } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ error: 'Username dan password harus diisi' });
     }
 
-    if (username === (process.env.ADMIN_USERNAME || 'admin') &&
-        password === (process.env.ADMIN_PASSWORD || 'admin')) {
-        const token = jwt.sign({ username }, process.env.JWT_SECRET || 'secret');
-        logger.info(`Admin login successful: ${username}`);
-        res.json({ token });
-    } else {
-        logger.warn(`Failed login attempt for username: ${username}`);
-        res.status(401).json({ error: 'Invalid credentials' });
+    // Check JWT_SECRET is set
+    if (!process.env.JWT_SECRET) {
+        logger.error('JWT_SECRET not configured!');
+        return res.status(500).json({ error: 'Server configuration error' });
     }
+
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+
+    if (username === adminUsername) {
+        let isValid = false;
+
+        // If hash is set, use bcrypt compare
+        if (adminPasswordHash) {
+            isValid = await bcrypt.compare(password, adminPasswordHash);
+        } else {
+            // Fallback to plain comparison (for backwards compatibility)
+            isValid = password === (process.env.ADMIN_PASSWORD || 'admin');
+            logger.warn('Using plaintext password comparison. Set ADMIN_PASSWORD_HASH for better security.');
+        }
+
+        if (isValid) {
+            const token = jwt.sign({ username }, process.env.JWT_SECRET);
+            logger.info(`Admin login successful: ${username}`);
+            return res.json({ token });
+        }
+    }
+
+    logger.warn(`Failed login attempt for username: ${username}`);
+    res.status(401).json({ error: 'Invalid credentials' });
 });
 
 // Dashboard stats
@@ -425,13 +447,13 @@ router.post('/users/:id/send-credentials', authenticateToken, async (req, res) =
         const message = "🔐 *INFORMASI LOGIN AKUN*\n\n" +
             "Hai " + (user.name || "User") + "! 👋\n\n" +
             "Berikut adalah informasi login akun tabungan Anda:\n\n" +
-            "👤 Username: *" + user.username + "*\n" +
-            "🔑 Password: *" + user.password + "*\n\n" +
+            "👤 Username: *" + user.username + "*\n\n" +
             "📱 Cara login:\n" +
             "1. Ketik /login\n" +
             "2. Masukkan username\n" +
-            "3. Masukkan password\n\n" +
-            "⚠️ Jaga kerahasiaan password Anda!\n\n" +
+            "3. Masukkan password yang Anda buat saat daftar\n\n" +
+            "⚠️ Password tidak dikirim via chat demi keamanan.\n" +
+            "Jika lupa password, hubungi admin.\n\n" +
             "- Admin Tabungan Bot";
 
         try {

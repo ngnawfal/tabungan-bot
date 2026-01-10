@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const { initializeWhatsApp } = require('./src/bot/whatsapp');
 const { initializeDatabase } = require('./src/database/migrations');
@@ -18,8 +19,31 @@ const PORT = process.env.PORT || 3847;
 // Trust proxy for rate limiting behind reverse proxy
 app.set('trust proxy', 1);
 
-// Middleware
-app.use(cors());
+// Security Headers with Helmet
+app.use(helmet({
+    contentSecurityPolicy: false, // Disable CSP for dashboard inline scripts
+    crossOriginEmbedderPolicy: false
+}));
+
+// CORS Configuration
+const allowedOrigins = [
+    'http://localhost:' + PORT,
+    'http://127.0.0.1:' + PORT,
+    process.env.CORS_ORIGIN // Allow custom origin from env
+].filter(Boolean);
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.some(allowed => origin.startsWith(allowed.split(':').slice(0, 2).join(':')))) {
+            return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -65,35 +89,35 @@ app.use((err, req, res, next) => {
 async function startServer() {
     try {
         logger.info('Starting Tabungan Bot Server...');
-        
+
         // Initialize Database
         logger.info('Initializing database...');
         await initializeDatabase();
-        
+
         // Initialize WhatsApp
         logger.info('Initializing WhatsApp...');
         await initializeWhatsApp();
-        
+
         // Start Reminder Service
         logger.info('Starting reminder service...');
         startReminderService();
-        
+
         // Start Auto Backup Scheduler (setiap hari jam 02:00)
         logger.info('Starting auto backup scheduler...');
         startBackupScheduler('0 2 * * *');
-        
+
         // Initialize gamification badges
         logger.info('Initializing gamification badges...');
         await initializeBadges();
-        
+
         // Start Weekly Report Scheduler (Minggu jam 08:00)
         logger.info('Starting weekly report scheduler...');
         startWeeklyReportScheduler();
-        
+
         // Start Daily Tips Scheduler (setiap hari jam 07:00)
         logger.info('Starting daily tips scheduler...');
         startDailyTipsScheduler();
-        
+
         // Start Express Server
         app.listen(PORT, () => {
             logger.info(`Server running on http://localhost:${PORT}`);

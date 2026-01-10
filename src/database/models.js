@@ -1,5 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcrypt');
+
+const SALT_ROUNDS = 10;
 
 const dbPath = path.resolve(process.env.DB_PATH || './data/database.sqlite');
 const db = new sqlite3.Database(dbPath);
@@ -480,12 +483,13 @@ function linkVisitorToPhone(visitorId, phoneNumber) {
     });
 }
 
-// Register user with username and password
-function registerUser(phoneNumber, username, password, name) {
+// Register user with username and password (HASHED)
+async function registerUser(phoneNumber, username, password, name) {
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     return new Promise((resolve, reject) => {
         db.run(
             'INSERT INTO users (phone_number, username, password, name, is_logged_in) VALUES (?, ?, ?, ?, 1)',
-            [phoneNumber, username, password, name],
+            [phoneNumber, username, hashedPassword, name],
             function (err) {
                 if (err) reject(err);
                 else resolve({ id: this.lastID, phone_number: phoneNumber, username, name });
@@ -494,15 +498,19 @@ function registerUser(phoneNumber, username, password, name) {
     });
 }
 
-// Login user
-function loginUser(phoneNumber, username, password) {
+// Login user (with bcrypt comparison)
+async function loginUser(phoneNumber, username, password) {
     return new Promise((resolve, reject) => {
         db.get(
-            'SELECT * FROM users WHERE phone_number = ? AND username = ? AND password = ?',
-            [phoneNumber, username, password],
-            (err, row) => {
+            'SELECT * FROM users WHERE phone_number = ? AND username = ?',
+            [phoneNumber, username],
+            async (err, row) => {
                 if (err) return reject(err);
                 if (!row) return resolve(null);
+
+                // Compare hashed password
+                const isMatch = await bcrypt.compare(password, row.password);
+                if (!isMatch) return resolve(null);
 
                 db.run('UPDATE users SET is_logged_in = 1 WHERE id = ?', [row.id], (err2) => {
                     if (err2) reject(err2);
@@ -541,13 +549,14 @@ function isUserLoggedIn(phoneNumber) {
     });
 }
 
-// Update user credentials
-function updateUserCredentials(userId, data) {
+// Update user credentials (with password hashing)
+async function updateUserCredentials(userId, data) {
+    const { username, password } = data;
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     return new Promise((resolve, reject) => {
-        const { username, password } = data;
         db.run(
             'UPDATE users SET username = ?, password = ? WHERE id = ?',
-            [username, password, userId],
+            [username, hashedPassword, userId],
             function (err) {
                 if (err) reject(err);
                 else resolve(this.changes);
