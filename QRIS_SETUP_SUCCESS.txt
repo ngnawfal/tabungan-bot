@@ -1,0 +1,56 @@
+﻿# 🎯 QRIS BERHASIL DISETUP!
+
+Screenshot QRIS Anda telah berhasil dikonfigurasi.
+File: Screenshot 2025-11-27 220704.png
+
+## ✅ Yang Sudah Dilakukan:
+1. QRIS Anda sudah tersimpan di folder qris-images
+2. Bot sudah dikonfigurasi untuk menggunakan QRIS tersebut
+3. Support format PNG dan JPG
+
+## 📝 Langkah Selanjutnya:
+
+### 1. Edit file .env dengan informasi Anda:
+Buka file .env dan ganti dengan data Anda:
+
+PAYMENT_ACCOUNT_NAME=Nama_Anda
+PAYMENT_ACCOUNT_NUMBER=No_HP_atau_Rekening
+PAYMENT_BANK_NAME=Nama_Bank_atau_EWallet
+
+Contoh untuk GoPay:
+PAYMENT_ACCOUNT_NAME=Budi Santoso
+PAYMENT_ACCOUNT_NUMBER=081234567890
+PAYMENT_BANK_NAME=GoPay
+
+Contoh untuk BCA:
+PAYMENT_ACCOUNT_NAME=Budi Santoso  
+PAYMENT_ACCOUNT_NUMBER=1234567890
+PAYMENT_BANK_NAME=BCA
+
+### 2. Tambahkan Gemini API Key:
+GEMINI_API_KEY=your_api_key_here
+
+Dapatkan gratis di: https://makersuite.google.com/app/apikey
+
+### 3. Jalankan Bot:
+npm start
+
+### 4. Test:
+- Scan QR code WhatsApp
+- Kirim: /start
+- Daftar: /daftar Nama_Anda
+- Test nabung: /nabung 10000
+
+## ℹ️ Info QRIS:
+QRIS yang Anda berikan akan digunakan untuk:
+- Menerima pembayaran dari user
+- User akan scan QRIS tersebut
+- Transfer sesuai nominal
+- Kirim screenshot untuk konfirmasi
+
+Pastikan QRIS tersebut:
+✅ Masih aktif
+✅ Bisa menerima pembayaran
+✅ Dari rekening/e-wallet Anda sendiri
+
+Bot siap digunakan dengan QRIS Anda!

@@ -1,0 +1,3824 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Tabungan Bot</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #7c3aed;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --sidebar-width: 260px;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            display: flex;
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            color: var(--text);
+            position: fixed;
+            height: 100vh;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .logo {
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu {
+            padding: 20px 0;
+            flex: 1;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #4b5563;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .menu-item:hover,
+        .menu-item.active {
+            background: #eef2ff;
+            color: var(--primary);
+            border-right: 3px solid var(--primary);
+        }
+
+        .menu-item i {
+            width: 20px;
+        }
+
+        .logout {
+            padding: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: #fee2e2;
+            color: #991b1b;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        /* Login */
+        .login-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card h3 {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        /* Charts Layout */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            height: 350px;
+        }
+
+        /* Table */
+        .table-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+            padding: 14px 24px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .bg-green {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #065f46;
+        }
+
+        .bg-red {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: #991b1b;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 16px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .toast.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .toast.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .toast i {
+            font-size: 20px;
+        }
+
+        .toast-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            opacity: 0.7;
+            font-size: 18px;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Confirm Dialog */
+        .confirm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .confirm-box {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.2s ease;
+        }
+
+        .confirm-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 28px;
+        }
+
+        .confirm-icon.warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .confirm-icon.danger {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .confirm-icon.info {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .confirm-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .confirm-message {
+            color: #6b7280;
+            margin-bottom: 25px;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .confirm-btn.cancel {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .confirm-btn.cancel:hover {
+            background: #d1d5db;
+        }
+
+        .confirm-btn.confirm {
+            background: var(--primary);
+            color: white;
+        }
+
+        .confirm-btn.confirm:hover {
+            background: var(--primary-hover);
+        }
+
+        .confirm-btn.danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .confirm-btn.danger:hover {
+            background: #dc2626;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Checkbox styling */
+        .tx-checkbox,
+        #selectAllTx {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        #btnDeleteSelected:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .bg-yellow {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #92400e;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Export Buttons */
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-export {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-export.btn-excel {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        /* Action Buttons */
+        .btn-action {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 2px;
+        }
+
+        .btn-action.btn-edit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-action.btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-action:hover {
+            opacity: 0.85;
+            transform: scale(1.05);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+            text-align: center;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 20px;
+            top: 10px;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        #modalImg {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login View -->
+    <div id="loginView" class="login-wrapper">
+        <div class="login-box">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <i class="fas fa-wallet fa-3x" style="color: var(--primary)"></i>
+                <h2 style="margin-top: 10px;">Admin Panel</h2>
+            </div>
+            <div class="form-group">
+                <input type="text" id="username" class="form-control" placeholder="Username">
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" class="form-control" placeholder="Password">
+            </div>
+            <button class="btn-primary" onclick="login()">Masuk</button>
+        </div>
+    </div>
+
+    <!-- Admin View -->
+    <div id="adminView" class="hidden" style="width: 100%; display: flex;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i> TabunganBot
+            </div>
+            <div class="menu">
+                <div class="menu-item active" onclick="switchTab('dashboard')">
+                    <i class="fas fa-home"></i> Dashboard
+                </div>
+                <div class="menu-item" onclick="switchTab('whatsapp')">
+                    <i class="fab fa-whatsapp"></i> WhatsApp <span id="waBadge" class="badge"
+                        style="margin-left:auto;padding:2px 8px;font-size:10px;"></span>
+                </div>
+                <div class="menu-item" onclick="switchTab('analysis')">
+                    <i class="fas fa-chart-pie"></i> Analisa Keuangan
+                </div>
+                <div class="menu-item" onclick="switchTab('transactions')">
+                    <i class="fas fa-list"></i> Riwayat Transaksi
+                </div>
+                <div class="menu-item" onclick="switchTab('users')">
+                    <i class="fas fa-users"></i> Kelola User
+                </div>
+                <div class="menu-item" onclick="switchTab('withdrawals')">
+                    <i class="fas fa-money-bill-wave"></i> Penarikan <span id="withdrawalBadge" class="badge bg-red"
+                        style="margin-left:auto;padding:2px 8px;font-size:10px;display:none;">0</span>
+                </div>
+                <div class="menu-item" onclick="switchTab('reminders')">
+                    <i class="fas fa-bell"></i> Reminder
+                </div>
+                <div class="menu-item" onclick="switchTab('backup')">
+                    <i class="fas fa-database"></i> Backup
+                </div>
+                <div class="menu-item" onclick="switchTab('expenses')">
+                    <i class="fas fa-receipt"></i> Pengeluaran
+                </div>
+            </div>
+            <div class="logout">
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Keluar
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Tab -->
+            <div id="tab-dashboard">
+                <div class="header">
+                    <div class="page-title">Dashboard Overview</div>
+                    <div id="currentDate" style="color: #6b7280"></div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Saldo</h3>
+                        <div class="value" id="totalSavings">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>User Terdaftar</h3>
+                        <div class="value" id="totalUsers">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Transaksi</h3>
+                        <div class="value" id="totalTransactions">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Target Aktif</h3>
+                        <div class="value" id="activeGoals">-</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 15px;">Transaksi Terakhir</h3>
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>User</th>
+                                <th>Tipe</th>
+                                <th>Jumlah</th>
+                                <th>Bukti</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTxTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Analysis Tab -->
+            <div id="tab-analysis" class="hidden">
+                <div class="header">
+                    <div class="page-title">Analisa Keuangan</div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Goal Progress Placeholder -->
+                <h3>Progress Target Tabungan</h3>
+                <div id="goalProgressContainer"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 15px;">
+                    <!-- Goal cards injected here -->
+                </div>
+            </div>
+
+            <!-- Transactions Tab -->
+            <div id="tab-transactions" class="hidden">
+                <div class="header">
+                    <div class="page-title">Semua Transaksi</div>
+                    <div class="export-buttons">
+                        <button class="btn-export" style="background: linear-gradient(135deg, #ef4444, #dc2626);"
+                            onclick="deleteSelectedTransactions()" id="btnDeleteSelected" disabled>
+                            <i class="fas fa-trash"></i> Hapus Terpilih (<span id="selectedCount">0</span>)
+                        </button>
+                        <button class="btn-export" onclick="exportTransactionsPDF()">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button class="btn-export btn-excel" onclick="exportTransactionsExcel()">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"><input type="checkbox" id="selectAllTx"
+                                        onchange="toggleSelectAll(this)"></th>
+                                <th>ID</th>
+                                <th>Waktu</th>
+                                <th>User</th>
+                                <th>Metode</th>
+                                <th>Tipe</th>
+                                <th>Jumlah</th>
+                                <th>Bukti</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fullTxTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="tab-users" class="hidden">
+                <div class="header">
+                    <div class="page-title">Kelola User</div>
+                    <div class="export-buttons">
+                        <button class="btn-export" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);"
+                            onclick="openBroadcast()">
+                            <i class="fas fa-bullhorn"></i> Broadcast
+                        </button>
+                        <button class="btn-export" onclick="exportUsersPDF()">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button class="btn-export btn-excel" onclick="exportUsersExcel()">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nama</th>
+                                <th>Username</th>
+                                <th>Password</th>
+                                <th>No. HP</th>
+                                <th>Visitor ID</th>
+                                <th>Pasangan</th>
+                                <th>Saldo</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Withdrawals Tab -->
+            <div id="tab-withdrawals" class="hidden">
+                <div class="header">
+                    <div class="page-title">Permintaan Penarikan</div>
+                </div>
+
+                <div class="stats-grid"
+                    style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+                    <div class="stat-card">
+                        <h3>Pending</h3>
+                        <div class="value" id="pendingWithdrawals" style="color: #f59e0b;">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Berhasil</h3>
+                        <div class="value" id="successWithdrawals" style="color: #10b981;">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Ditolak</h3>
+                        <div class="value" id="failedWithdrawals" style="color: #ef4444;">0</div>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Waktu</th>
+                                <th>User</th>
+                                <th>Jumlah</th>
+                                <th>Saldo User</th>
+                                <th>Tujuan</th>
+                                <th>No. Rek/E-Wallet</th>
+                                <th>Nama Pemilik</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="withdrawalsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reminders Tab -->
+            <div id="tab-reminders" class="hidden">
+                <div class="header">
+                    <div class="page-title">Pengaturan Reminder</div>
+                    <div class="export-buttons">
+                        <button class="btn-export" style="background: linear-gradient(135deg, #10b981, #059669);"
+                            onclick="openAddReminder()">
+                            <i class="fas fa-plus"></i> Tambah Reminder
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-bottom: 20px; padding: 15px; background: #dbeafe; border-radius: 8px; color: #1e40af;">
+                    <strong><i class="fas fa-info-circle"></i> Info:</strong>
+                    <ul style="margin: 10px 0 0 20px;">
+                        <li>Reminder akan dikirim otomatis sesuai jadwal yang ditentukan</li>
+                        <li>Anda bisa mengatur pesan kustom untuk setiap user/pasangan</li>
+                        <li>Klik tombol "Kirim Sekarang" untuk mengirim reminder manual</li>
+                    </ul>
+                </div>
+
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Partner</th>
+                                <th>Frekuensi</th>
+                                <th>Jam Kirim</th>
+                                <th>Pesan Kustom</th>
+                                <th>Status</th>
+                                <th>Terakhir Kirim</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="remindersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Backup Tab -->
+            <div id="tab-backup" class="hidden">
+                <div class="header">
+                    <div class="page-title">Backup & Restore</div>
+                    <div class="export-buttons">
+                        <button class="btn-export" style="background: linear-gradient(135deg, #10b981, #059669);"
+                            onclick="createBackup()">
+                            <i class="fas fa-download"></i> Export Backup
+                        </button>
+                        <button class="btn-export" style="background: linear-gradient(135deg, #f59e0b, #d97706);"
+                            onclick="document.getElementById('backupFileInput').click()">
+                            <i class="fas fa-upload"></i> Import Backup
+                        </button>
+                        <input type="file" id="backupFileInput" accept=".zip" style="display:none"
+                            onchange="importBackup(this)">
+                    </div>
+                </div>
+
+                <div class="stats-grid"
+                    style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+                    <div class="stat-card">
+                        <h3>Total Backup</h3>
+                        <div class="value" id="totalBackups">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Backup Terakhir</h3>
+                        <div class="value" style="font-size: 16px;" id="lastBackup">-</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 15px;">📦 Daftar Backup</h3>
+                <div class="table-card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nama File</th>
+                                <th>Ukuran</th>
+                                <th>Tanggal</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backupTable"></tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 20px; padding: 15px; background: #fef3c7; border-radius: 8px; color: #92400e;">
+                    <strong>💡 Tips:</strong>
+                    <ul style="margin: 10px 0 0 20px;">
+                        <li>Backup otomatis berjalan setiap hari jam 2 pagi</li>
+                        <li>Maksimal 5 backup terakhir disimpan</li>
+                        <li>Backup berisi: database & folder uploads</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- WhatsApp Tab -->
+            <div id="tab-whatsapp" class="hidden">
+                <div class="header">
+                    <div class="page-title">Koneksi WhatsApp</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; max-width: 900px;">
+                    <!-- QR Code Section -->
+                    <div class="stat-card" style="text-align: center; padding: 30px;">
+                        <h3 style="margin-bottom: 20px; font-size: 16px;">📱 Scan QR Code</h3>
+                        <div id="qrCodeContainer"
+                            style="min-height: 280px; display: flex; align-items: center; justify-content: center;">
+                            <div id="qrLoading" style="color: #64748b;">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p style="margin-top: 10px;">Menghubungkan...</p>
+                            </div>
+                            <img id="qrCodeImage" src="" alt="QR Code"
+                                style="max-width: 256px; border-radius: 8px; display: none;">
+                            <div id="qrConnected" style="display: none; color: #10b981;">
+                                <i class="fas fa-check-circle fa-4x"></i>
+                                <p style="margin-top: 15px; font-weight: 600; font-size: 18px;">Terhubung!</p>
+                                <p id="connectedPhone" style="margin-top: 5px; color: #64748b;"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Section -->
+                    <div class="stat-card" style="padding: 30px;">
+                        <h3 style="margin-bottom: 20px; font-size: 16px;">📊 Status Koneksi</h3>
+
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                                <div id="statusDot"
+                                    style="width: 12px; height: 12px; border-radius: 50%; background: #fbbf24;"></div>
+                                <span id="statusText" style="font-weight: 600;">Menginisialisasi...</span>
+                            </div>
+                            <p id="statusDescription" style="color: #64748b; font-size: 14px;">Silakan tunggu...</p>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Terakhir diupdate:</p>
+                            <p id="lastUpdate" style="font-weight: 500;">-</p>
+                        </div>
+
+                        <button id="btnTestWA" class="btn-export"
+                            style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); margin-bottom: 10px; display: none;"
+                            onclick="testWhatsAppConnection()">
+                            <i class="fas fa-paper-plane"></i> Test Koneksi
+                        </button>
+
+                        <button id="btnLogoutWA" class="btn-export"
+                            style="width: 100%; background: linear-gradient(135deg, #ef4444, #dc2626);"
+                            onclick="logoutWhatsApp()">
+                            <i class="fas fa-sign-out-alt"></i> Logout & Scan Ulang
+                        </button>
+
+                        <div
+                            style="margin-top: 20px; padding: 15px; background: #dbeafe; border-radius: 8px; color: #1e40af; font-size: 13px;">
+                            <strong><i class="fas fa-info-circle"></i> Tips:</strong>
+                            <ul style="margin: 10px 0 0 15px;">
+                                <li>Buka WhatsApp di HP Anda</li>
+                                <li>Ketuk Menu > Linked Devices</li>
+                                <li>Scan QR code yang ditampilkan</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses Tab -->
+            <div id="tab-expenses" style="display: none;">
+                <div class="header">
+                    <div class="page-title">📊 Pengeluaran</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="expenseMonthFilter" onchange="loadExpenses()"
+                            style="padding: 8px 12px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                            <option value="">Semua Bulan</option>
+                        </select>
+                        <button onclick="exportExpensePDF()" class="btn-export"
+                            style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button onclick="exportExpenseExcel()" class="btn-export btn-excel"
+                            style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Expense Stats -->
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-card">
+                        <h3>Total Pengeluaran</h3>
+                        <div class="value" id="totalExpenses" style="color: #ef4444;">Rp 0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Jumlah Transaksi</h3>
+                        <div class="value" id="expenseCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Kategori Terbesar</h3>
+                        <div class="value" id="topCategory" style="font-size: 18px;">-</div>
+                    </div>
+                </div>
+
+                <!-- Chart and Table Container -->
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                    <!-- Pie Chart -->
+                    <div class="card">
+                        <h3 style="margin-bottom: 15px;">📊 Per Kategori</h3>
+                        <canvas id="expensePieChart" style="max-height: 300px;"></canvas>
+                    </div>
+
+                    <!-- Expense Table -->
+                    <div class="card">
+                        <h3 style="margin-bottom: 15px;">📝 Daftar Pengeluaran</h3>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table class="data-table" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Kategori</th>
+                                        <th>Nominal</th>
+                                        <th>Keterangan</th>
+                                        <th>User</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenseTableBody">
+                                    <tr>
+                                        <td colspan="5" style="text-align:center;">Memuat data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== TOAST & CONFIRM FUNCTIONS =====
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-times-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || icons.info}"></i>
+                <span>${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        function showConfirm(title, message, onConfirm, options = {}) {
+            const { type = 'warning', confirmText = 'Ya', cancelText = 'Batal', danger = false } = options;
+
+            const icons = {
+                warning: 'fa-exclamation-triangle',
+                danger: 'fa-trash-alt',
+                info: 'fa-question-circle'
+            };
+
+            const overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+            overlay.innerHTML = `
+                <div class="confirm-box">
+                    <div class="confirm-icon ${type}">
+                        <i class="fas ${icons[type] || icons.warning}"></i>
+                    </div>
+                    <div class="confirm-title">${title}</div>
+                    <div class="confirm-message">${message}</div>
+                    <div class="confirm-buttons">
+                        <button class="confirm-btn cancel" onclick="this.closest('.confirm-overlay').remove()">
+                            ${cancelText}
+                        </button>
+                        <button class="confirm-btn ${danger ? 'danger' : 'confirm'}" id="confirmBtn">
+                            ${confirmText}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            overlay.querySelector('#confirmBtn').onclick = () => {
+                overlay.remove();
+                if (onConfirm) onConfirm();
+            };
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.remove();
+            });
+        }
+
+        // ===== AUTH LOGIC =====
+        const token = localStorage.getItem('token');
+
+        // Initialize date display
+        document.addEventListener('DOMContentLoaded', function () {
+            const dateElement = document.getElementById('currentDate');
+            if (dateElement) {
+                dateElement.innerText = new Date().toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            }
+
+            // Check authentication on page load
+            if (token) {
+                showAdminPanel();
+            }
+        });
+
+        async function login() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('token', data.token);
+                    showAdminPanel();
+                } else { showToast('Login gagal! Username atau password salah.', 'error'); }
+            } catch (e) { showToast('Terjadi kesalahan koneksi!', 'error'); }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            location.reload();
+        }
+
+        function showAdminPanel() {
+            document.getElementById('loginView').classList.add('hidden');
+            document.getElementById('adminView').classList.remove('hidden');
+
+            // Ensure dashboard tab is active and visible on load
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            document.querySelector('.menu-item').classList.add('active'); // First menu item is dashboard
+
+            // Hide all tabs first
+            document.getElementById('tab-dashboard').classList.remove('hidden');
+            document.getElementById('tab-whatsapp').classList.add('hidden');
+            document.getElementById('tab-analysis').classList.add('hidden');
+            document.getElementById('tab-transactions').classList.add('hidden');
+            document.getElementById('tab-users').classList.add('hidden');
+            document.getElementById('tab-withdrawals').classList.add('hidden');
+            document.getElementById('tab-reminders').classList.add('hidden');
+            document.getElementById('tab-backup').classList.add('hidden');
+            document.getElementById('tab-expenses').classList.add('hidden');
+
+            // Update withdrawal badge
+            updateWithdrawalBadge();
+
+            // Load dashboard data with retry on failure
+            loadDashboardData().catch(err => {
+                console.error('Failed to load dashboard data:', err);
+                // Retry once after 1 second
+                setTimeout(() => {
+                    loadDashboardData().catch(err2 => {
+                        console.error('Retry failed:', err2);
+                        showToast('Gagal memuat data. Silakan refresh halaman.', 'error');
+                    });
+                }, 1000);
+            });
+        }
+
+        // Navigation
+        function switchTab(tabName) {
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            document.getElementById('tab-dashboard').classList.add('hidden');
+            document.getElementById('tab-whatsapp').classList.add('hidden');
+            document.getElementById('tab-analysis').classList.add('hidden');
+            document.getElementById('tab-transactions').classList.add('hidden');
+            document.getElementById('tab-users').classList.add('hidden');
+            document.getElementById('tab-withdrawals').classList.add('hidden');
+            document.getElementById('tab-reminders').classList.add('hidden');
+            document.getElementById('tab-backup').classList.add('hidden');
+            document.getElementById('tab-expenses').classList.add('hidden');
+
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+
+            if (tabName === 'dashboard') loadDashboardData();
+            if (tabName === 'whatsapp') initWhatsAppSSE();
+            if (tabName === 'analysis') loadAnalysisData();
+            if (tabName === 'withdrawals') loadWithdrawalsData();
+            if (tabName === 'transactions') loadTransactionsData();
+            if (tabName === 'users') loadUsersData();
+            if (tabName === 'reminders') loadRemindersData();
+            if (tabName === 'backup') loadBackupData();
+            if (tabName === 'expenses') loadExpenses();
+        }
+
+        // ===== WHATSAPP SSE CONNECTION =====
+        let waEventSource = null;
+
+        function initWhatsAppSSE() {
+            // Close existing connection if any
+            if (waEventSource) {
+                waEventSource.close();
+            }
+
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            // Create SSE connection with token
+            waEventSource = new EventSource(`/api/whatsapp/stream?token=${encodeURIComponent(token)}`);
+
+            waEventSource.onmessage = function (event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    updateWhatsAppUI(data);
+                } catch (e) {
+                    console.error('Error parsing WhatsApp status:', e);
+                }
+            };
+
+            waEventSource.onerror = function (err) {
+                console.error('WhatsApp SSE error:', err);
+                // Try to reconnect after 5 seconds
+                setTimeout(() => {
+                    if (document.getElementById('tab-whatsapp') && !document.getElementById('tab-whatsapp').classList.contains('hidden')) {
+                        initWhatsAppSSE();
+                    }
+                }, 5000);
+            };
+        }
+
+        function updateWhatsAppUI(data) {
+            const qrLoading = document.getElementById('qrLoading');
+            const qrImage = document.getElementById('qrCodeImage');
+            const qrConnected = document.getElementById('qrConnected');
+            const connectedPhone = document.getElementById('connectedPhone');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const statusDesc = document.getElementById('statusDescription');
+            const lastUpdate = document.getElementById('lastUpdate');
+            const waBadge = document.getElementById('waBadge');
+            const btnLogout = document.getElementById('btnLogoutWA');
+            const btnTest = document.getElementById('btnTestWA');
+
+            // Update last update time
+            if (data.timestamp) {
+                lastUpdate.textContent = new Date(data.timestamp).toLocaleString('id-ID');
+            }
+
+            // Status-specific UI updates
+            switch (data.status) {
+                case 'initializing':
+                    qrLoading.style.display = 'block';
+                    qrImage.style.display = 'none';
+                    qrConnected.style.display = 'none';
+                    statusDot.style.background = '#fbbf24';
+                    statusText.textContent = 'Menginisialisasi...';
+                    statusDesc.textContent = 'Memulai koneksi WhatsApp...';
+                    waBadge.textContent = '⏳';
+                    waBadge.style.background = '#fef3c7';
+                    waBadge.style.color = '#92400e';
+                    btnLogout.disabled = true;
+                    btnTest.style.display = 'none';
+                    break;
+
+                case 'qr_ready':
+                    qrLoading.style.display = 'none';
+                    qrConnected.style.display = 'none';
+                    if (data.qr) {
+                        qrImage.src = data.qr;
+                        qrImage.style.display = 'block';
+                    }
+                    statusDot.style.background = '#3b82f6';
+                    statusText.textContent = 'Menunggu Scan';
+                    statusDesc.textContent = 'Scan QR code dengan aplikasi WhatsApp Anda';
+                    waBadge.textContent = '📱';
+                    waBadge.style.background = '#dbeafe';
+                    waBadge.style.color = '#1e40af';
+                    btnLogout.disabled = false;
+                    btnTest.style.display = 'none';
+                    break;
+
+                case 'authenticated':
+                    qrLoading.style.display = 'block';
+                    qrLoading.innerHTML = '<i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top: 10px;">Mengautentikasi...</p>';
+                    qrImage.style.display = 'none';
+                    qrConnected.style.display = 'none';
+                    statusDot.style.background = '#8b5cf6';
+                    statusText.textContent = 'Mengautentikasi...';
+                    statusDesc.textContent = 'QR berhasil discan, menghubungkan...';
+                    waBadge.textContent = '🔄';
+                    waBadge.style.background = '#ede9fe';
+                    waBadge.style.color = '#6d28d9';
+                    btnLogout.disabled = true;
+                    btnTest.style.display = 'none';
+                    break;
+
+                case 'ready':
+                    qrLoading.style.display = 'none';
+                    qrImage.style.display = 'none';
+                    qrConnected.style.display = 'block';
+                    if (data.phone) {
+                        connectedPhone.textContent = '+' + data.phone;
+                    }
+                    statusDot.style.background = '#10b981';
+                    statusText.textContent = 'Terhubung';
+                    statusDesc.textContent = 'WhatsApp bot aktif dan siap digunakan';
+                    waBadge.textContent = '✓';
+                    waBadge.style.background = '#d1fae5';
+                    waBadge.style.color = '#065f46';
+                    btnLogout.disabled = false;
+                    btnTest.style.display = 'block';
+                    break;
+
+                case 'disconnected':
+                    qrLoading.style.display = 'block';
+                    qrLoading.innerHTML = '<i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top: 10px;">Menghubungkan ulang...</p>';
+                    qrImage.style.display = 'none';
+                    qrConnected.style.display = 'none';
+                    statusDot.style.background = '#ef4444';
+                    statusText.textContent = 'Terputus';
+                    statusDesc.textContent = 'Koneksi terputus, mencoba menghubungkan ulang...';
+                    waBadge.textContent = '!';
+                    waBadge.style.background = '#fee2e2';
+                    waBadge.style.color = '#991b1b';
+                    btnLogout.disabled = false;
+                    btnTest.style.display = 'none';
+                    break;
+            }
+        }
+
+        async function logoutWhatsApp() {
+            showConfirm(
+                'Logout WhatsApp?',
+                'Ini akan memutus koneksi WhatsApp dan menampilkan QR code baru untuk scan ulang.',
+                async () => {
+                    try {
+                        const res = await fetch('/api/whatsapp/logout', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                        });
+                        if (res.ok) {
+                            showToast('Logout berhasil, QR code baru akan muncul', 'success');
+                        } else {
+                            const err = await res.json();
+                            showToast(err.error || 'Gagal logout', 'error');
+                        }
+                    } catch (e) {
+                        showToast('Gagal menghubungi server', 'error');
+                    }
+                },
+                { type: 'warning', confirmText: 'Ya, Logout', danger: true }
+            );
+        }
+
+        async function testWhatsAppConnection() {
+            const btn = document.getElementById('btnTestWA');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+
+            try {
+                const res = await fetch('/api/whatsapp/test', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(data.message || 'Test message berhasil dikirim!', 'success');
+                } else {
+                    showToast(data.error || 'Gagal mengirim test message', 'error');
+                }
+            } catch (e) {
+                showToast('Gagal menghubungi server', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Helper functions for proof/screenshot handling
+        function getProofButton(tx) {
+            if (tx.screenshot_path) {
+                return `<button onclick="viewProof('${tx.screenshot_path}')" style="background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer; padding:5px 10px; font-size:12px;">📷 Lihat</button>`;
+            }
+            return '<span style="color:#9ca3af; font-size:12px;">Tidak ada</span>';
+        }
+
+        function viewProof(path) {
+            const url = '/uploads/' + path;
+            document.getElementById('modalImg').src = url;
+            document.getElementById('imageModal').style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = "none";
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const modal = document.getElementById('imageModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Verify token is still valid
+                if (!localStorage.getItem('token')) {
+                    throw new Error('No authentication token');
+                }
+
+                const res = await fetch('/api/stats', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+                if (!res.ok) throw new Error('Failed to fetch stats');
+
+                const stats = await res.json();
+
+                // Update stats with null checks
+                if (document.getElementById('totalSavings')) {
+                    document.getElementById('totalSavings').innerText = 'Rp ' + (stats.totalSavings || 0).toLocaleString('id-ID');
+                }
+                if (document.getElementById('totalUsers')) {
+                    document.getElementById('totalUsers').innerText = stats.totalUsers || 0;
+                }
+                if (document.getElementById('totalTransactions')) {
+                    document.getElementById('totalTransactions').innerText = stats.totalTransactions || 0;
+                }
+                if (document.getElementById('activeGoals')) {
+                    document.getElementById('activeGoals').innerText = stats.activeGoals || 0;
+                }
+
+                // Load recent transactions
+                const txRes = await fetch('/api/transactions?limit=5', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+                if (!txRes.ok) throw new Error('Failed to fetch transactions');
+
+                const txs = await txRes.json();
+                const tbody = document.getElementById('recentTxTable');
+                if (tbody) {
+                    tbody.innerHTML = txs.map(tx => `
+                        <tr>
+                            <td>${new Date(tx.created_at).toLocaleDateString('id-ID')}</td>
+                            <td>${tx.user_name || '-'}</td>
+                            <td><span class="badge ${tx.type === 'deposit' ? 'bg-green' : 'bg-red'}">${tx.type}</span></td>
+                            <td>Rp ${tx.amount.toLocaleString('id-ID')}</td>
+                            <td>${getProofButton(tx)}</td>
+                            <td>${getStatusBadge(tx)}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                throw error; // Re-throw to allow caller to handle
+            }
+        }
+
+        async function loadAnalysisData() {
+            const res = await fetch('/api/analysis', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            const data = await res.json();
+
+            // 1. Monthly Chart
+            const ctx1 = document.getElementById('monthlyChart').getContext('2d');
+            if (window.monthlyChartInst) window.monthlyChartInst.destroy();
+
+            window.monthlyChartInst = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: data.monthly.map(m => m.month),
+                    datasets: [
+                        {
+                            label: 'Pemasukan',
+                            data: data.monthly.map(m => m.income),
+                            backgroundColor: '#10b981'
+                        },
+                        {
+                            label: 'Pengeluaran',
+                            data: data.monthly.map(m => m.expense),
+                            backgroundColor: '#ef4444'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { title: { display: true, text: 'Arus Kas Bulanan' } }
+                }
+            });
+
+            // 2. Payment Chart
+            const ctx2 = document.getElementById('paymentChart').getContext('2d');
+            if (window.paymentChartInst) window.paymentChartInst.destroy();
+
+            window.paymentChartInst = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: data.paymentMethods.map(p => p.payment_method.toUpperCase()),
+                    datasets: [{
+                        data: data.paymentMethods.map(p => p.count),
+                        backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { title: { display: true, text: 'Metode Pembayaran' } }
+                }
+            });
+
+            // 3. Goal Progress
+            const goalContainer = document.getElementById('goalProgressContainer');
+            if (data.goalProgress && data.goalProgress.length > 0) {
+                goalContainer.innerHTML = data.goalProgress.map(g => {
+                    const current = g.current_amount || 0;
+                    const target = g.target_amount || 1;
+                    const percent = Math.min(100, Math.max(0, Math.round((current / target) * 100)));
+                    const progressColor = percent >= 100 ? '#10b981' : percent >= 50 ? '#3b82f6' : '#f59e0b';
+                    const partnerInfo = g.partner_name ? ` & ${g.partner_name}` : '';
+                    return `
+                        <div class="stat-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <strong>${g.title}</strong>
+                                    <div style="font-size:11px; color:#6b7280;">👫 ${g.user_name || 'Unknown'}${partnerInfo}</div>
+                                </div>
+                                <span style="font-size:18px; font-weight:700; color:${progressColor};">${percent}%</span>
+                            </div>
+                            <div style="background:#e5e7eb; height:10px; border-radius:5px; margin-top:12px; overflow:hidden;">
+                                <div style="background:${progressColor}; width:${percent}%; height:100%; border-radius:5px; transition:width 0.5s;"></div>
+                            </div>
+                            <div style="margin-top:8px; font-size:13px; color:#374151; display:flex; justify-content:space-between;">
+                                <span>Rp ${current.toLocaleString('id-ID')}</span>
+                                <span style="color:#6b7280;">Target: Rp ${target.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                goalContainer.innerHTML = '<p>Belum ada target aktif.</p>';
+            }
+        }
+
+
+        async function loadTransactionsData() {
+            const res = await fetch('/api/transactions?limit=100', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            const txs = await res.json();
+            const tbody = document.getElementById('fullTxTable');
+            tbody.innerHTML = txs.map(tx => `
+                <tr>
+                    <td><input type="checkbox" class="tx-checkbox" value="${tx.id}" onchange="updateSelectedCount()"></td>
+                    <td>#${tx.id}</td>
+                    <td>${new Date(tx.created_at).toLocaleString()}</td>
+                    <td>${tx.user_name || '-'}<br><small>${tx.phone_number}</small></td>
+                    <td>${tx.payment_method}</td>
+                    <td><span class="badge ${tx.type === 'deposit' ? 'bg-green' : 'bg-red'}">${tx.type}</span></td>
+                    <td><b>Rp ${tx.amount.toLocaleString('id-ID')}</b></td>
+                    <td>${getProofButton(tx)}</td>
+                    <td>${getStatusBadge(tx)}</td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick="editTransaction(${tx.id}, ${tx.amount}, '${tx.type}', '${tx.payment_method}', '${tx.status || 'pending'}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-action btn-delete" onclick="deleteTransaction(${tx.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Reset select all checkbox
+            document.getElementById('selectAllTx').checked = false;
+            updateSelectedCount();
+        }
+
+
+        function getStatusBadge(tx) {
+            if (tx.confirmed) return '<span class="badge bg-green">✓ Sukses</span>';
+            if (tx.status === 'pending') {
+                return `
+                    <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+                        <span class="badge bg-yellow">⏳ Pending</span>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="confirmTx(${tx.id})" 
+                                    style="padding: 6px 12px; 
+                                           font-size: 11px; 
+                                           background: var(--success); 
+                                           color: white; 
+                                           border: none; 
+                                           border-radius: 6px; 
+                                           cursor: pointer;
+                                           font-weight: 600;
+                                           transition: all 0.2s;
+                                           box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                    onmouseover="this.style.transform='scale(1.05)'"
+                                    onmouseout="this.style.transform='scale(1)'">
+                                ✓ Konfirmasi
+                            </button>
+                            <button onclick="rejectTx(${tx.id})" 
+                                    style="padding: 6px 12px; 
+                                           font-size: 11px; 
+                                           background: var(--danger); 
+                                           color: white; 
+                                           border: none; 
+                                           border-radius: 6px; 
+                                           cursor: pointer;
+                                           font-weight: 600;
+                                           transition: all 0.2s;
+                                           box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                    onmouseover="this.style.transform='scale(1.05)'"
+                                    onmouseout="this.style.transform='scale(1)'">
+                                × Tolak
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            if (tx.status === 'expired') return '<span class="badge bg-red">⏱ Expired</span>';
+            if (tx.status === 'cancelled') return '<span class="badge bg-red">× Batal</span>';
+            return '<span class="badge">' + (tx.status || 'Unknown') + '</span>';
+        }
+
+        async function confirmTx(id) {
+            showConfirm('Konfirmasi Transaksi', 'Apakah Anda yakin ingin mengkonfirmasi transaksi ini?', async () => {
+                try {
+                    const res = await fetch('/api/transactions/' + id + '/confirm', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    });
+                    if (res.ok) {
+                        showToast('Transaksi berhasil dikonfirmasi!', 'success');
+                        loadTransactionsData();
+                        loadDashboardData();
+                    } else {
+                        showToast('Gagal mengkonfirmasi transaksi.', 'error');
+                    }
+                } catch (e) { console.error(e); }
+            }, { type: 'info', confirmText: 'Konfirmasi' });
+        }
+
+        async function rejectTx(id) {
+            showConfirm('Tolak Transaksi', 'Apakah Anda yakin ingin menolak transaksi ini?', async () => {
+                try {
+                    const res = await fetch('/api/transactions/' + id + '/reject', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    });
+                    if (res.ok) {
+                        showToast('Transaksi berhasil ditolak.', 'success');
+                        loadTransactionsData();
+                        loadDashboardData();
+                    } else {
+                        showToast('Gagal menolak transaksi.', 'error');
+                    }
+                } catch (e) { console.error(e); }
+            }, { type: 'danger', confirmText: 'Tolak', danger: true });
+        }
+
+        // ===== TRANSACTION MANAGEMENT =====
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('.tx-checkbox');
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const checked = document.querySelectorAll('.tx-checkbox:checked');
+            const count = checked.length;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('btnDeleteSelected').disabled = count === 0;
+        }
+
+        function getSelectedTransactionIds() {
+            const checked = document.querySelectorAll('.tx-checkbox:checked');
+            return Array.from(checked).map(cb => parseInt(cb.value));
+        }
+
+        function deleteSelectedTransactions() {
+            const ids = getSelectedTransactionIds();
+            if (ids.length === 0) {
+                showToast('Pilih transaksi yang ingin dihapus', 'warning');
+                return;
+            }
+
+            showConfirm(
+                'Hapus ' + ids.length + ' Transaksi',
+                'Yakin ingin menghapus ' + ids.length + ' transaksi terpilih? Tindakan ini tidak dapat dibatalkan.',
+                async () => {
+                    try {
+                        const res = await fetch('/api/transactions/bulk-delete', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ ids })
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            showToast(data.deleted + ' transaksi berhasil dihapus!', 'success');
+                            loadTransactionsData();
+                            loadDashboardData();
+                        } else {
+                            showToast('Gagal menghapus transaksi.', 'error');
+                        }
+                    } catch (e) {
+                        console.error('Bulk delete error:', e);
+                        showToast('Terjadi kesalahan.', 'error');
+                    }
+                },
+                { type: 'danger', confirmText: 'Hapus Semua', danger: true }
+            );
+        }
+
+        function closeTxModal() {
+            document.getElementById('txEditModal').style.display = 'none';
+        }
+
+        function editTransaction(id, amount, type, method, status) {
+            document.getElementById('editTxId').value = id;
+            document.getElementById('editTxAmount').value = amount;
+            document.getElementById('editTxType').value = type;
+            document.getElementById('editTxMethod').value = method;
+            document.getElementById('editTxStatus').value = status;
+            document.getElementById('txEditModal').style.display = 'flex';
+        }
+
+        async function saveTransaction() {
+            const id = document.getElementById('editTxId').value;
+            const amount = parseInt(document.getElementById('editTxAmount').value);
+            const type = document.getElementById('editTxType').value;
+            const payment_method = document.getElementById('editTxMethod').value;
+            const status = document.getElementById('editTxStatus').value;
+
+            if (!amount || amount <= 0) {
+                showToast('Nominal harus lebih dari 0!', 'warning');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/transactions/' + id, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ amount, type, payment_method, status })
+                });
+
+                if (res.ok) {
+                    showToast('Transaksi berhasil diupdate!', 'success');
+                    closeTxModal();
+                    loadTransactionsData();
+                    loadDashboardData();
+                } else {
+                    showToast('Gagal update transaksi.', 'error');
+                }
+            } catch (e) {
+                console.error('Save transaction error:', e);
+                showToast('Terjadi kesalahan.', 'error');
+            }
+        }
+
+        function deleteTransaction(id) {
+            showConfirm('Hapus Transaksi', 'Yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.', async () => {
+                try {
+                    const res = await fetch('/api/transactions/' + id, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    });
+
+                    if (res.ok) {
+                        showToast('Transaksi berhasil dihapus!', 'success');
+                        loadTransactionsData();
+                        loadDashboardData();
+                    } else {
+                        showToast('Gagal menghapus transaksi.', 'error');
+                    }
+                } catch (e) {
+                    console.error('Delete transaction error:', e);
+                    showToast('Terjadi kesalahan.', 'error');
+                }
+            }, { type: 'danger', confirmText: 'Hapus', danger: true });
+        }
+
+        // Close transaction modal when clicking outside
+        window.addEventListener('click', function (event) {
+            const txModal = document.getElementById('txEditModal');
+            if (event.target === txModal) {
+                closeTxModal();
+            }
+        });
+
+        // ===== USERS MANAGEMENT =====
+        async function loadUsersData() {
+            try {
+                const res = await fetch('/api/users', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const users = await res.json();
+                const tbody = document.getElementById('usersTable');
+                tbody.innerHTML = users.map(user => `
+                    <tr>
+                        <td>#${user.id}</td>
+                        <td><strong>${user.name || '-'}</strong></td>
+                        <td>${user.username || '<span style="color:#f59e0b">Belum diset</span>'}</td>
+                        <td>${user.password ? '••••••••' : '<span style="color:#f59e0b">Belum diset</span>'}</td>
+                        <td>${user.phone_number}</td>
+                        <td><code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:11px;">${user.visitor_id || '-'}</code></td>
+                        <td>${user.partner_phone || '-'}</td>
+                        <td><strong>Rp ${(user.balance || 0).toLocaleString('id-ID')}</strong></td>
+                        <td>${user.is_logged_in ? '<span style="color:#10b981">🟢 Online</span>' : '<span style="color:#9ca3af">⚪ Offline</span>'}</td>
+                        <td style="white-space: nowrap;">
+                            <button class="btn-action btn-edit" onclick="editUser(${user.id}, '${(user.name || '').replace(/'/g, "\\'")}', '${user.phone_number}', '${user.partner_phone || ''}', '${user.username || ''}', '${user.password || ''}', '${user.visitor_id || ''}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action" style="background:#10b981;" onclick="sendCredentials(${user.id}, '${user.username || ''}')" title="Kirim Info Login">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button class="btn-action" style="background:#3b82f6;" onclick="openSendMessage(${user.id}, '${(user.name || '').replace(/'/g, "\\'")}')" title="Kirim Pesan">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                            <button class="btn-action btn-delete" onclick="deleteUser(${user.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading users:', e);
+            }
+        }
+
+        // editUser function moved to bottom of page with modal support
+
+        function deleteUser(id) {
+            showConfirm('Hapus User', 'Yakin ingin menghapus user ini? Data transaksi akan tetap tersimpan.', () => {
+                fetch('/api/users/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                }).then(res => {
+                    if (res.ok) {
+                        showToast('User berhasil dihapus!', 'success');
+                        loadUsersData();
+                        loadDashboardData();
+                    } else {
+                        showToast('Gagal menghapus user.', 'error');
+                    }
+                });
+            }, { type: 'danger', confirmText: 'Hapus', danger: true });
+        }
+
+        // ===== EXPORT FUNCTIONS =====
+        let cachedTransactions = [];
+        let cachedUsers = [];
+
+        async function exportTransactionsPDF() {
+            try {
+                const res = await fetch('/api/export/transactions', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const transactions = await res.json();
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(18);
+                doc.text('Laporan Transaksi', 14, 22);
+                doc.setFontSize(10);
+                doc.text('Tanggal: ' + new Date().toLocaleDateString('id-ID'), 14, 30);
+
+                const tableData = transactions.map(tx => [
+                    tx.id,
+                    new Date(tx.created_at).toLocaleDateString('id-ID'),
+                    tx.user_name || '-',
+                    tx.type,
+                    'Rp ' + tx.amount.toLocaleString('id-ID'),
+                    tx.payment_method,
+                    tx.confirmed ? 'Sukses' : (tx.status || 'Pending')
+                ]);
+
+                doc.autoTable({
+                    head: [['ID', 'Tanggal', 'User', 'Tipe', 'Jumlah', 'Metode', 'Status']],
+                    body: tableData,
+                    startY: 35,
+                    styles: { fontSize: 8 },
+                    headStyles: { fillColor: [79, 70, 229] }
+                });
+
+                doc.save('transaksi_' + new Date().toISOString().slice(0, 10) + '.pdf');
+            } catch (e) {
+                console.error('Export PDF error:', e);
+                showToast('Gagal export PDF', 'error');
+            }
+        }
+
+        async function exportTransactionsExcel() {
+            try {
+                const res = await fetch('/api/export/transactions', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const transactions = await res.json();
+
+                const wsData = [
+                    ['ID', 'Tanggal', 'User', 'No HP', 'Tipe', 'Jumlah', 'Metode', 'Status']
+                ];
+
+                transactions.forEach(tx => {
+                    wsData.push([
+                        tx.id,
+                        new Date(tx.created_at).toLocaleDateString('id-ID'),
+                        tx.user_name || '-',
+                        tx.phone_number || '-',
+                        tx.type,
+                        tx.amount,
+                        tx.payment_method,
+                        tx.confirmed ? 'Sukses' : (tx.status || 'Pending')
+                    ]);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Transaksi');
+                XLSX.writeFile(wb, 'transaksi_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+            } catch (e) {
+                console.error('Export Excel error:', e);
+                showToast('Gagal export Excel', 'error');
+            }
+        }
+
+        async function exportUsersPDF() {
+            try {
+                const res = await fetch('/api/export/users', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const users = await res.json();
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(18);
+                doc.text('Daftar User', 14, 22);
+                doc.setFontSize(10);
+                doc.text('Tanggal: ' + new Date().toLocaleDateString('id-ID'), 14, 30);
+
+                const tableData = users.map(u => [
+                    u.id,
+                    u.name || '-',
+                    u.phone_number,
+                    u.partner_phone || '-',
+                    'Rp ' + (u.balance || 0).toLocaleString('id-ID'),
+                    u.total_transactions || 0,
+                    new Date(u.created_at).toLocaleDateString('id-ID')
+                ]);
+
+                doc.autoTable({
+                    head: [['ID', 'Nama', 'No HP', 'Pasangan', 'Saldo', 'Total TX', 'Terdaftar']],
+                    body: tableData,
+                    startY: 35,
+                    styles: { fontSize: 8 },
+                    headStyles: { fillColor: [79, 70, 229] }
+                });
+
+                doc.save('users_' + new Date().toISOString().slice(0, 10) + '.pdf');
+            } catch (e) {
+                console.error('Export PDF error:', e);
+                showToast('Gagal export PDF', 'error');
+            }
+        }
+
+        async function exportUsersExcel() {
+            try {
+                const res = await fetch('/api/export/users', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const users = await res.json();
+
+                const wsData = [
+                    ['ID', 'Nama', 'No HP', 'Pasangan', 'Saldo', 'Total Transaksi', 'Terdaftar']
+                ];
+
+                users.forEach(u => {
+                    wsData.push([
+                        u.id,
+                        u.name || '-',
+                        u.phone_number,
+                        u.partner_phone || '-',
+                        u.balance || 0,
+                        u.total_transactions || 0,
+                        new Date(u.created_at).toLocaleDateString('id-ID')
+                    ]);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Users');
+                XLSX.writeFile(wb, 'users_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+            } catch (e) {
+                console.error('Export Excel error:', e);
+                showToast('Gagal export Excel', 'error');
+            }
+        }
+    </script>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Bukti Pembayaran</h3>
+            <img id="modalImg" src="" alt="Bukti Transfer">
+        </div>
+    </div>
+
+    <!-- Transaction Edit Modal -->
+    <div id="txEditModal" class="modal">
+        <div class="modal-content" style="max-width: 450px; text-align: left;">
+            <span class="close" onclick="closeTxModal()">&times;</span>
+            <h3 style="margin-bottom: 20px;">✏️ Edit Transaksi</h3>
+            <input type="hidden" id="editTxId">
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Nominal (Rp)</label>
+                <input type="number" id="editTxAmount" class="form-control"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Tipe</label>
+                <select id="editTxType" class="form-control"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="deposit">Deposit (Menabung)</option>
+                    <option value="withdrawal">Withdrawal (Penarikan)</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Metode Pembayaran</label>
+                <select id="editTxMethod" class="form-control"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="qris">QRIS</option>
+                    <option value="transfer">Transfer Bank</option>
+                    <option value="cash">Cash</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Status</label>
+                <select id="editTxStatus" class="form-control"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="pending">Pending</option>
+                    <option value="success">Success</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="expired">Expired</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveTransaction()"
+                    style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    💾 Simpan
+                </button>
+                <button onclick="closeTxModal()"
+                    style="flex: 1; padding: 12px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Message Modal -->
+    <div id="sendMessageModal" class="modal">
+        <div class="modal-content" style="max-width: 550px; text-align: left;">
+            <span class="close" onclick="closeSendMessageModal()">&times;</span>
+            <h3 style="margin-bottom: 20px;">📨 Kirim Pesan WhatsApp</h3>
+            <input type="hidden" id="sendMessageUserId">
+            <div style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 6px;">
+                <strong>Kepada:</strong> <span id="sendMessageUserName"></span>
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Template Pesan</label>
+                <select id="sendMessageTemplate" onchange="applySendMessageTemplate()"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="">-- Tulis Manual --</option>
+                    <optgroup label="📢 Layanan">
+                        <option value="service_back">✅ Layanan Aktif Kembali</option>
+                        <option value="apology">🙏 Mohon Maaf Gangguan</option>
+                        <option value="maintenance_info">🔧 Info Maintenance</option>
+                    </optgroup>
+                    <optgroup label="👤 Personal">
+                        <option value="welcome">👋 Selamat Datang</option>
+                        <option value="reminder_personal">⏰ Reminder Menabung</option>
+                        <option value="congrats">🎉 Ucapan Selamat</option>
+                        <option value="thankyou">🙏 Terima Kasih</option>
+                    </optgroup>
+                    <optgroup label="💰 Transaksi">
+                        <option value="tx_confirmed">✅ Konfirmasi Transaksi</option>
+                        <option value="tx_issue">⚠️ Masalah Transaksi</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Pesan</label>
+                <textarea id="sendMessageText" rows="8" class="form-control" placeholder="Ketik pesan di sini..."
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; resize: vertical;"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="sendMessage()"
+                    style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-paper-plane"></i> Kirim
+                </button>
+                <button onclick="closeSendMessageModal()"
+                    style="flex: 1; padding: 12px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Broadcast Modal -->
+    <div id="broadcastModal" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: left;">
+            <span class="close" onclick="closeBroadcastModal()">&times;</span>
+            <h3 style="margin-bottom: 20px;">📢 Broadcast ke Semua User</h3>
+            <div style="margin-bottom: 15px; padding: 10px; background: #fef3c7; border-radius: 6px; color: #92400e;">
+                <i class="fas fa-exclamation-triangle"></i> Pesan akan dikirim ke <strong>semua user terdaftar</strong>
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Pesan Broadcast</label>
+                <textarea id="broadcastText" rows="5" class="form-control"
+                    placeholder="Ketik pesan broadcast di sini..."
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; resize: vertical;"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Template Cepat</label>
+                <select id="broadcastTemplate" onchange="applyBroadcastTemplate()"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="">-- Pilih Template --</option>
+                    <optgroup label="📢 Layanan">
+                        <option value="service_back">✅ Layanan Aktif Kembali</option>
+                        <option value="apology">🙏 Mohon Maaf Gangguan</option>
+                        <option value="maintenance_schedule">🔧 Jadwal Maintenance</option>
+                        <option value="maintenance_now">⚠️ Maintenance Sedang Berlangsung</option>
+                        <option value="maintenance_done">✅ Maintenance Selesai</option>
+                    </optgroup>
+                    <optgroup label="📣 Pengumuman">
+                        <option value="update">🆕 Update Fitur Baru</option>
+                        <option value="info">📢 Informasi Penting</option>
+                        <option value="promo">🎉 Promo/Event</option>
+                    </optgroup>
+                    <optgroup label="💰 Tabungan">
+                        <option value="reminder">⏰ Reminder Menabung</option>
+                        <option value="motivasi">💪 Motivasi Menabung</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="sendBroadcast()"
+                    style="flex: 1; padding: 12px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-bullhorn"></i> Kirim Broadcast
+                </button>
+                <button onclick="closeBroadcastModal()"
+                    style="flex: 1; padding: 12px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Edit Modal -->
+    <div id="userEditModal" class="modal">
+        <div class="modal-content" style="max-width: 450px; text-align: left;">
+            <span class="close" onclick="closeUserModal()">&times;</span>
+            <h3 style="margin-bottom: 20px;">✏️ Edit User</h3>
+            <input type="hidden" id="editUserId">
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Nama</label>
+                <input type="text" id="editUserName" class="form-control"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Username</label>
+                <input type="text" id="editUsername" class="form-control" placeholder="username123"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Password</label>
+                <input type="text" id="editPassword" class="form-control" placeholder="password"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <small style="color: #6b7280;">Kosongkan jika tidak ingin mengubah password</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">No. HP User</label>
+                <input type="text" id="editUserPhone" class="form-control" placeholder="Contoh: 6281234567890"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <small style="color: #6b7280;">Format: kode negara + nomor (misal: 6285879188491)</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Visitor ID <span
+                        style="color:#f59e0b">(WhatsApp Internal ID)</span></label>
+                <input type="text" id="editVisitorId" class="form-control" placeholder="Contoh: 82957494685713"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-family: monospace;">
+                <small style="color: #6b7280;">Lihat di console server saat user kirim pesan. Format: angka tanpa
+                    @lid</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">No. HP Pasangan</label>
+                <input type="text" id="editPartnerPhone" class="form-control" placeholder="Contoh: 6281234567890"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <small style="color: #6b7280;">Atau pilih dari daftar user:</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Pilih Partner dari User
+                    Terdaftar</label>
+                <select id="partnerSelect" class="form-control" onchange="selectPartner()"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="">-- Tidak ada partner --</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveUser()"
+                    style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    💾 Simpan
+                </button>
+                <button onclick="closeUserModal()"
+                    style="flex: 1; padding: 12px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminder Modal -->
+    <div id="reminderModal" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: left;">
+            <span class="close" onclick="closeReminderModal()">&times;</span>
+            <h3 style="margin-bottom: 20px;" id="reminderModalTitle">➕ Tambah Reminder</h3>
+            <input type="hidden" id="editReminderId">
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Pilih User <small
+                        style="color:#6b7280">(Ctrl+Click untuk pilih banyak)</small></label>
+                <select id="reminderUserId" class="form-control" multiple size="6"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                </select>
+                <div style="margin-top: 8px;">
+                    <button type="button" onclick="selectAllReminderUsers()"
+                        style="padding: 5px 10px; font-size: 12px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">Pilih
+                        Semua</button>
+                    <button type="button" onclick="deselectAllReminderUsers()"
+                        style="padding: 5px 10px; font-size: 12px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">Batal
+                        Pilih</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Frekuensi</label>
+                <select id="reminderFrequency" class="form-control"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="daily">Harian</option>
+                    <option value="weekly">Mingguan</option>
+                    <option value="monthly">Bulanan</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Jam Kirim</label>
+                <select id="reminderSendTime" class="form-control"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="05:00">05:00</option>
+                    <option value="06:00">06:00</option>
+                    <option value="07:00">07:00</option>
+                    <option value="08:00">08:00</option>
+                    <option value="09:00" selected>09:00</option>
+                    <option value="10:00">10:00</option>
+                    <option value="11:00">11:00</option>
+                    <option value="12:00">12:00</option>
+                    <option value="13:00">13:00</option>
+                    <option value="14:00">14:00</option>
+                    <option value="15:00">15:00</option>
+                    <option value="16:00">16:00</option>
+                    <option value="17:00">17:00</option>
+                    <option value="18:00">18:00</option>
+                    <option value="19:00">19:00</option>
+                    <option value="20:00">20:00</option>
+                    <option value="21:00">21:00</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Template Pesan</label>
+                <select id="reminderTemplate" class="form-control" onchange="applyReminderTemplate()"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="default">📝 Default - Reminder Menabung</option>
+                    <option value="motivasi">💪 Motivasi - Semangat Menabung</option>
+                    <option value="target">🎯 Target - Progress Goal</option>
+                    <option value="pasangan">💕 Pasangan - Nabung Bareng</option>
+                    <option value="hemat">💰 Hemat - Tips Menabung</option>
+                    <option value="custom">✏️ Custom - Tulis Sendiri</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Preview / Edit Pesan</label>
+                <textarea id="reminderCustomMessage" rows="6" class="form-control"
+                    style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; resize: vertical; font-family: monospace; font-size: 13px;"></textarea>
+                <small style="color: #6b7280;">Variabel: <code>{name}</code> = nama user, <code>{saldo}</code> = saldo
+                    user</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Status</label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="reminderIsActive" checked
+                        style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <span>Aktif</span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveReminder()"
+                    style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    💾 Simpan
+                </button>
+                <button onclick="closeReminderModal()"
+                    style="flex: 1; padding: 12px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // User Edit Modal Functions
+        let allUsers = [];
+
+        function closeUserModal() {
+            document.getElementById('userEditModal').style.display = 'none';
+        }
+
+        function selectPartner() {
+            const select = document.getElementById('partnerSelect');
+            const phoneInput = document.getElementById('editPartnerPhone');
+            if (select.value) {
+                phoneInput.value = select.value;
+            }
+        }
+
+        async function editUser(id, name, phoneNumber, partnerPhone, username, password, visitorId) {
+            // Fetch all users for partner dropdown
+            try {
+                const res = await fetch('/api/users', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                allUsers = await res.json();
+
+                // Populate partner dropdown (exclude current user)
+                const select = document.getElementById('partnerSelect');
+                select.innerHTML = '<option value="">-- Tidak ada partner --</option>';
+                allUsers.filter(u => u.id !== id).forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u.phone_number;
+                    option.textContent = u.name + ' (' + u.phone_number + ')';
+                    if (u.phone_number === partnerPhone) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+
+                // Set form values
+                document.getElementById('editUserId').value = id;
+                document.getElementById('editUserName').value = name;
+                document.getElementById('editUsername').value = username || '';
+                document.getElementById('editPassword').value = '';
+                document.getElementById('editUserPhone').value = phoneNumber || '';
+                document.getElementById('editVisitorId').value = visitorId || '';
+                document.getElementById('editPartnerPhone').value = partnerPhone || '';
+
+                // Show modal
+                document.getElementById('userEditModal').style.display = 'flex';
+            } catch (e) {
+                console.error('Error loading users for edit:', e);
+                showToast('Gagal memuat data user', 'error');
+            }
+        }
+
+        async function saveUser() {
+            const id = document.getElementById('editUserId').value;
+            const name = document.getElementById('editUserName').value;
+            const username = document.getElementById('editUsername').value;
+            const password = document.getElementById('editPassword').value;
+            const phoneNumber = document.getElementById('editUserPhone').value;
+            const visitorId = document.getElementById('editVisitorId').value;
+            const partnerPhone = document.getElementById('editPartnerPhone').value;
+
+            if (!name.trim()) {
+                showToast('Nama tidak boleh kosong!', 'warning');
+                return;
+            }
+
+            if (!phoneNumber.trim()) {
+                showToast('No. HP tidak boleh kosong!', 'warning');
+                return;
+            }
+
+            const data = {
+                name: name,
+                phone_number: phoneNumber,
+                partner_phone: partnerPhone || null,
+                username: username || null,
+                visitor_id: visitorId || null
+            };
+
+            // Only include password if provided
+            if (password.trim()) {
+                data.password = password;
+            }
+
+            try {
+                const res = await fetch('/api/users/' + id, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    showToast('User berhasil diupdate!', 'success');
+                    closeUserModal();
+                    loadUsersData();
+                } else {
+                    showToast('Gagal update user.', 'error');
+                }
+            } catch (e) {
+                console.error('Save user error:', e);
+                showToast('Terjadi kesalahan.', 'error');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function (event) {
+            const userModal = document.getElementById('userEditModal');
+            if (event.target === userModal) {
+                closeUserModal();
+            }
+        });
+
+        // ===== BACKUP FUNCTIONS =====
+        async function loadBackupData() {
+            try {
+                const res = await fetch('/api/backup/list', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const backups = await res.json();
+
+                document.getElementById('totalBackups').textContent = backups.length;
+                document.getElementById('lastBackup').textContent = backups.length > 0
+                    ? new Date(backups[0].createdAt).toLocaleString('id-ID')
+                    : '-';
+
+                const tbody = document.getElementById('backupTable');
+                if (backups.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#9ca3af;">Belum ada backup</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = backups.map(backup => `
+                    <tr>
+                        <td><i class="fas fa-file-archive" style="color:#10b981; margin-right:8px;"></i>${backup.filename}</td>
+                        <td>${backup.sizeFormatted}</td>
+                        <td>${new Date(backup.createdAt).toLocaleString('id-ID')}</td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick="downloadBackup('${backup.filename}')">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            <button class="btn-action btn-delete" onclick="deleteBackupFile('${backup.filename}')">
+                                <i class="fas fa-trash"></i> Hapus
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading backups:', e);
+                showToast('Gagal memuat daftar backup', 'error');
+            }
+        }
+
+        async function createBackup() {
+            showToast('Membuat backup...', 'info');
+            try {
+                const res = await fetch('/api/backup/create', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast(`Backup berhasil dibuat! (${data.backup.sizeFormatted})`, 'success');
+                    loadBackupData();
+                } else {
+                    showToast('Gagal membuat backup.', 'error');
+                }
+            } catch (e) {
+                console.error('Create backup error:', e);
+                showToast('Terjadi kesalahan.', 'error');
+            }
+        }
+
+        function downloadBackup(filename) {
+            const token = localStorage.getItem('token');
+            window.location.href = '/api/backup/download/' + filename + '?token=' + token;
+        }
+
+        function deleteBackupFile(filename) {
+            showConfirm('Hapus Backup', `Yakin ingin menghapus backup "${filename}"?`, async () => {
+                try {
+                    const res = await fetch('/api/backup/' + filename, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    });
+                    if (res.ok) {
+                        showToast('Backup berhasil dihapus!', 'success');
+                        loadBackupData();
+                    } else {
+                        showToast('Gagal menghapus backup.', 'error');
+                    }
+                } catch (e) {
+                    console.error('Delete backup error:', e);
+                    showToast('Terjadi kesalahan.', 'error');
+                }
+            }, { type: 'danger', confirmText: 'Hapus', danger: true });
+        }
+
+        // ===== MESSAGING FUNCTIONS =====
+
+        // Send credentials to user
+        async function sendCredentials(userId, username) {
+            if (!username) {
+                showToast('Username belum diset untuk user ini!', 'warning');
+                return;
+            }
+
+            showConfirm('Kirim Info Login', 'Kirim informasi username dan password ke user ini via WhatsApp?', async () => {
+                showToast('Mengirim info login...', 'info');
+                try {
+                    const res = await fetch('/api/users/' + userId + '/send-credentials', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        showToast('Info login berhasil dikirim!', 'success');
+                    } else {
+                        showToast(data.error || 'Gagal mengirim info login.', 'error');
+                    }
+                } catch (e) {
+                    console.error('Send credentials error:', e);
+                    showToast('Terjadi kesalahan.', 'error');
+                }
+            }, { confirmText: 'Kirim' });
+        }
+
+        // Open send message modal
+        function openSendMessage(userId, userName) {
+            document.getElementById('sendMessageUserId').value = userId;
+            document.getElementById('sendMessageUserName').textContent = userName || 'User #' + userId;
+            document.getElementById('sendMessageText').value = '';
+            document.getElementById('sendMessageTemplate').value = '';
+            document.getElementById('sendMessageModal').style.display = 'flex';
+        }
+
+        function closeSendMessageModal() {
+            document.getElementById('sendMessageModal').style.display = 'none';
+        }
+
+        // Apply template for individual message
+        function applySendMessageTemplate() {
+            const template = document.getElementById('sendMessageTemplate').value;
+            const textarea = document.getElementById('sendMessageText');
+            const userName = document.getElementById('sendMessageUserName').textContent;
+
+            const templates = {
+                // Layanan
+                service_back: `Hai ${userName}! 👋
+
+Kami informasikan bahwa layanan Tabungan Bot sudah *AKTIF KEMBALI* dan dapat digunakan seperti biasa.
+
+Mohon maaf atas ketidaknyamanan sebelumnya. Terima kasih atas kesabarannya! 🙏
+
+Silakan lanjutkan aktivitas menabung Anda.
+
+- Admin Tabungan Bot`,
+
+                apology: `Hai ${userName}! 👋
+
+Kami mohon maaf atas gangguan layanan yang terjadi sebelumnya.
+
+Layanan kini sudah berjalan normal kembali. Terima kasih atas pengertiannya! 🙏
+
+- Admin Tabungan Bot`,
+
+                maintenance_info: `Hai ${userName}! 👋
+
+Kami informasikan akan ada maintenance pada:
+📅 Tanggal: [ISI TANGGAL]
+⏰ Waktu: [ISI WAKTU]
+
+Mohon selesaikan transaksi penting sebelum jadwal tersebut.
+
+Terima kasih! 🙏
+
+- Admin Tabungan Bot`,
+
+                // Personal
+                welcome: `Hai ${userName}! 👋
+
+Selamat datang di Tabungan Bot! 🎉
+
+Kami senang Anda bergabung. Berikut cara menggunakan bot:
+📌 /nabung [nominal] - Menabung
+📌 /saldo - Cek saldo
+📌 /riwayat - Lihat riwayat
+📌 /help - Bantuan lengkap
+
+Selamat menabung! 💰
+
+- Admin Tabungan Bot`,
+
+                reminder_personal: `Hai ${userName}! 👋
+
+Jangan lupa menabung hari ini ya! 💰
+
+Konsistensi adalah kunci keberhasilan menabung. Sedikit demi sedikit, lama-lama menjadi bukit! 🏔️
+
+Ketik /nabung [nominal] untuk mulai.
+
+Semangat! 💪
+
+- Admin Tabungan Bot`,
+
+                congrats: `Hai ${userName}! 🎉
+
+Selamat! [ISI UCAPAN SELAMAT]
+
+Terus semangat menabung untuk masa depan yang lebih baik! 🚀
+
+- Admin Tabungan Bot`,
+
+                thankyou: `Hai ${userName}! 👋
+
+Terima kasih telah menggunakan Tabungan Bot! 🙏
+
+[ISI PESAN TAMBAHAN]
+
+Jika ada pertanyaan, jangan ragu untuk menghubungi admin.
+
+- Admin Tabungan Bot`,
+
+                // Transaksi
+                tx_confirmed: `Hai ${userName}! ✅
+
+Transaksi Anda telah dikonfirmasi!
+
+💰 Detail:
+• ID: #[ISI ID]
+• Nominal: Rp [ISI NOMINAL]
+• Status: Berhasil
+
+Terima kasih telah menabung! 💪
+
+- Admin Tabungan Bot`,
+
+                tx_issue: `Hai ${userName}! ⚠️
+
+Kami menemukan masalah pada transaksi Anda:
+
+📋 Detail:
+• ID: #[ISI ID]
+• Masalah: [ISI MASALAH]
+
+Mohon hubungi admin untuk bantuan lebih lanjut.
+
+- Admin Tabungan Bot`
+            };
+
+            if (templates[template]) {
+                textarea.value = templates[template];
+            }
+        }
+
+        // Send message to user
+        async function sendMessage() {
+            const userId = document.getElementById('sendMessageUserId').value;
+            const message = document.getElementById('sendMessageText').value.trim();
+
+            if (!message) {
+                showToast('Pesan tidak boleh kosong!', 'warning');
+                return;
+            }
+
+            showToast('Mengirim pesan...', 'info');
+            try {
+                const res = await fetch('/api/users/' + userId + '/send-message', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('Pesan berhasil dikirim!', 'success');
+                    closeSendMessageModal();
+                } else {
+                    showToast(data.error || 'Gagal mengirim pesan.', 'error');
+                }
+            } catch (e) {
+                console.error('Send message error:', e);
+                showToast('Terjadi kesalahan.', 'error');
+            }
+        }
+
+        // Open broadcast modal
+        function openBroadcast() {
+            document.getElementById('broadcastText').value = '';
+            document.getElementById('broadcastTemplate').value = '';
+            document.getElementById('broadcastModal').style.display = 'flex';
+        }
+
+        function closeBroadcastModal() {
+            document.getElementById('broadcastModal').style.display = 'none';
+        }
+
+        // Apply broadcast template
+        function applyBroadcastTemplate() {
+            const template = document.getElementById('broadcastTemplate').value;
+            const textarea = document.getElementById('broadcastText');
+
+            const templates = {
+                // Layanan
+                service_back: `✅ *LAYANAN SUDAH AKTIF KEMBALI*
+
+Hai Sahabat Tabungan! 👋
+
+Kami informasikan bahwa layanan Tabungan Bot sudah *AKTIF KEMBALI* dan dapat digunakan seperti biasa.
+
+Mohon maaf atas ketidaknyamanan yang terjadi sebelumnya. Kami telah melakukan perbaikan untuk meningkatkan kualitas layanan.
+
+Terima kasih atas kesabaran dan pengertiannya! 🙏
+
+Silakan lanjutkan aktivitas menabung Anda:
+📌 Ketik /nabung [nominal] untuk menabung
+📌 Ketik /saldo untuk cek saldo
+📌 Ketik /help untuk bantuan
+
+Salam,
+Admin Tabungan Bot 💰`,
+
+                apology: `🙏 *MOHON MAAF ATAS GANGGUAN*
+
+Hai Sahabat Tabungan!
+
+Kami mohon maaf yang sebesar-besarnya atas gangguan layanan yang terjadi pada:
+
+📅 Tanggal: [ISI TANGGAL]
+⏰ Waktu: [ISI WAKTU]
+📝 Keterangan: [ISI KETERANGAN]
+
+Kami telah mengidentifikasi dan memperbaiki masalah tersebut. Layanan kini sudah berjalan normal kembali.
+
+Terima kasih atas kesabaran dan pengertiannya. Kepuasan Anda adalah prioritas kami! 🙏
+
+Salam,
+Admin Tabungan Bot`,
+
+                maintenance_schedule: `🔧 *PEMBERITAHUAN JADWAL MAINTENANCE*
+
+Hai Sahabat Tabungan! 👋
+
+Kami informasikan bahwa akan dilakukan maintenance sistem pada:
+
+📅 Tanggal: [ISI TANGGAL]
+⏰ Waktu: [ISI WAKTU MULAI] - [ISI WAKTU SELESAI]
+⏱️ Estimasi: [ISI DURASI] jam
+
+Selama maintenance berlangsung, layanan bot akan *TIDAK DAPAT DIGUNAKAN*.
+
+Mohon selesaikan transaksi penting Anda sebelum jadwal maintenance.
+
+Kami akan memberitahu kembali saat layanan sudah aktif.
+
+Terima kasih atas pengertiannya! 🙏
+
+- Admin Tabungan Bot`,
+
+                maintenance_now: `⚠️ *MAINTENANCE SEDANG BERLANGSUNG*
+
+Hai Sahabat Tabungan!
+
+Saat ini layanan Tabungan Bot sedang dalam proses *MAINTENANCE*.
+
+⏰ Estimasi selesai: [ISI WAKTU]
+
+Mohon maaf atas ketidaknyamanannya. Kami sedang melakukan:
+• [ISI AKTIVITAS 1]
+• [ISI AKTIVITAS 2]
+
+Kami akan segera menginformasikan saat layanan sudah aktif kembali.
+
+Terima kasih atas kesabarannya! 🙏
+
+- Admin Tabungan Bot`,
+
+                maintenance_done: `✅ *MAINTENANCE SELESAI*
+
+Hai Sahabat Tabungan! 👋
+
+Kabar baik! 🎉
+
+Proses maintenance telah *SELESAI* dan layanan Tabungan Bot sudah dapat digunakan kembali seperti biasa.
+
+Terima kasih atas kesabaran menunggu! 🙏
+
+Selamat melanjutkan aktivitas menabung:
+📌 /nabung [nominal] - Menabung
+📌 /saldo - Cek Saldo
+📌 /help - Bantuan
+
+- Admin Tabungan Bot 💰`,
+
+                // Pengumuman
+                update: `🆕 *UPDATE FITUR BARU*
+
+Hai Sahabat Tabungan! 👋
+
+Kami telah menambahkan fitur baru untuk pengalaman menabung yang lebih baik:
+
+✨ *[NAMA FITUR]*
+📝 [DESKRIPSI FITUR]
+
+Cara menggunakan:
+1. [LANGKAH 1]
+2. [LANGKAH 2]
+
+Silakan coba fitur terbaru dengan ketik /help
+
+Semoga bermanfaat! 🚀
+
+- Admin Tabungan Bot`,
+
+                info: `📢 *INFORMASI PENTING*
+
+Hai Sahabat Tabungan! 👋
+
+Kami ingin menginformasikan:
+
+📌 [ISI INFORMASI]
+
+[DETAIL TAMBAHAN JIKA PERLU]
+
+Jika ada pertanyaan, silakan hubungi admin.
+
+Terima kasih! 🙏
+
+- Admin Tabungan Bot`,
+
+                promo: `🎉 *PROMO SPESIAL*
+
+Hai Sahabat Tabungan! 👋
+
+Ada kabar gembira untuk kamu! 🎊
+
+[DESKRIPSI PROMO]
+
+📅 Periode: [TANGGAL MULAI] - [TANGGAL SELESAI]
+📌 Syarat & Ketentuan:
+• [SYARAT 1]
+• [SYARAT 2]
+
+Jangan sampai ketinggalan!
+
+- Admin Tabungan Bot 🎁`,
+
+                // Tabungan
+                reminder: `⏰ *REMINDER MENABUNG*
+
+Hai Sahabat! 👋
+
+Jangan lupa menabung hari ini ya! 💰
+
+"Sedikit demi sedikit, lama-lama menjadi bukit!" 🏔️
+
+Ketik /nabung [nominal] untuk mulai menabung.
+
+Semangat! 💪
+
+- Admin Tabungan Bot`,
+
+                motivasi: `💪 *SEMANGAT MENABUNG!*
+
+Hai Sahabat Tabungan! 🌟
+
+"Masa depan diciptakan oleh apa yang kau lakukan hari ini, bukan besok." 
+- Robert Kiyosaki
+
+💡 Tips hari ini:
+• Sisihkan 10-20% penghasilan untuk tabungan
+• Nabung di awal bulan, bukan sisa akhir bulan
+• Konsisten lebih penting dari nominal besar
+
+Yuk mulai nabung sekarang!
+Ketik /nabung [nominal]
+
+Kamu pasti bisa! 🚀
+
+- Admin Tabungan Bot`
+            };
+
+            if (templates[template]) {
+                textarea.value = templates[template];
+            }
+        }
+
+        // Send broadcast
+        async function sendBroadcast() {
+            const message = document.getElementById('broadcastText').value.trim();
+
+            if (!message) {
+                showToast('Pesan broadcast tidak boleh kosong!', 'warning');
+                return;
+            }
+
+            showConfirm('Kirim Broadcast', 'Pesan akan dikirim ke SEMUA user terdaftar. Lanjutkan?', async () => {
+                showToast('Mengirim broadcast...', 'info');
+                closeBroadcastModal();
+
+                try {
+                    const res = await fetch('/api/broadcast', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        showToast(`Broadcast selesai! Terkirim: ${data.sent}, Gagal: ${data.failed}`, 'success');
+                    } else {
+                        showToast(data.error || 'Gagal mengirim broadcast.', 'error');
+                    }
+                } catch (e) {
+                    console.error('Broadcast error:', e);
+                    showToast('Terjadi kesalahan.', 'error');
+                }
+            }, { type: 'warning', confirmText: 'Kirim Broadcast', danger: true });
+        }
+
+        function importBackup(input) {
+            if (!input.files || !input.files[0]) return;
+
+            const file = input.files[0];
+            if (!file.name.endsWith('.zip')) {
+                showToast('File harus berformat .zip', 'error');
+                input.value = '';
+                return;
+            }
+
+            showConfirm('Import Backup',
+                `Yakin ingin restore dari "${file.name}"?\n\nData saat ini akan di-backup otomatis sebelum restore. Server perlu direstart setelah restore.`,
+                async () => {
+                    showToast('Mengimport backup...', 'info');
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('backup', file);
+
+                        const res = await fetch('/api/backup/restore', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                            body: formData
+                        });
+
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            showToast(`Backup berhasil direstore! Safety backup: ${data.safetyBackup}`, 'success');
+                            loadBackupData();
+                            // Suggest page reload
+                            setTimeout(() => {
+                                showConfirm('Restart Required', 'Backup berhasil direstore. Refresh halaman untuk melihat data terbaru?', () => {
+                                    location.reload();
+                                }, { confirmText: 'Refresh' });
+                            }, 1500);
+                        } else {
+                            showToast(data.error || 'Gagal import backup.', 'error');
+                        }
+                    } catch (e) {
+                        console.error('Import backup error:', e);
+                        showToast('Terjadi kesalahan saat import.', 'error');
+                    }
+
+                    input.value = '';
+                },
+                { type: 'warning', confirmText: 'Import', danger: true }
+            );
+        }
+
+        // ===== WITHDRAWAL FUNCTIONS =====
+
+        async function updateWithdrawalBadge() {
+            try {
+                const res = await fetch('/api/withdrawals/pending-count', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const badge = document.getElementById('withdrawalBadge');
+                    if (badge) {
+                        if (data.count > 0) {
+                            badge.textContent = data.count;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to update withdrawal badge:', e);
+            }
+        }
+
+        async function loadWithdrawalsData() {
+            try {
+                const res = await fetch('/api/withdrawals', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const withdrawals = await res.json();
+
+                // Update stats
+                const pending = withdrawals.filter(w => w.status === 'pending').length;
+                const success = withdrawals.filter(w => w.status === 'success').length;
+                const failed = withdrawals.filter(w => w.status === 'failed').length;
+
+                document.getElementById('pendingWithdrawals').textContent = pending;
+                document.getElementById('successWithdrawals').textContent = success;
+                document.getElementById('failedWithdrawals').textContent = failed;
+
+                // Update badge
+                const badge = document.getElementById('withdrawalBadge');
+                if (pending > 0) {
+                    badge.textContent = pending;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+
+                // Render table
+                const tbody = document.getElementById('withdrawalsTable');
+                tbody.innerHTML = withdrawals.map(w => `
+                    <tr style="${w.status === 'pending' ? 'background: #fef3c7;' : ''}">
+                        <td>#${w.id}</td>
+                        <td>${new Date(w.created_at).toLocaleString('id-ID')}</td>
+                        <td>${w.user_name || '-'}<br><small>${w.phone_number || ''}</small></td>
+                        <td><b>Rp ${w.amount.toLocaleString('id-ID')}</b></td>
+                        <td>Rp ${(w.user_balance || 0).toLocaleString('id-ID')}</td>
+                        <td><span class="badge" style="background: ${w.account_type === 'bank' ? '#dbeafe; color: #1e40af;' : '#d1fae5; color: #065f46;'}">${w.account_type.toUpperCase()}</span></td>
+                        <td>${w.account_number}</td>
+                        <td>${w.account_name}</td>
+                        <td>${getWithdrawalStatusBadge(w)}</td>
+                        <td>${getWithdrawalActions(w)}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Load withdrawals error:', e);
+                showToast('Gagal memuat data penarikan.', 'error');
+            }
+        }
+
+        function getWithdrawalStatusBadge(w) {
+            if (w.status === 'pending') {
+                return '<span class="badge bg-yellow">⏳ Pending</span>';
+            } else if (w.status === 'success') {
+                return '<span class="badge bg-green">✓ Berhasil</span>';
+            } else if (w.status === 'failed') {
+                return '<span class="badge bg-red">✗ Ditolak</span>';
+            }
+            return '<span class="badge">' + w.status + '</span>';
+        }
+
+        function getWithdrawalActions(w) {
+            if (w.status !== 'pending') {
+                const processedAt = w.processed_at ? new Date(w.processed_at).toLocaleString('id-ID') : '-';
+                return `<small style="color:#6b7280;">${w.admin_notes || ''}<br>Diproses: ${processedAt}</small>`;
+            }
+
+            return `
+                <div style="display: flex; gap: 6px;">
+                    <button onclick="approveWithdrawal(${w.id})" 
+                            style="padding: 6px 12px; 
+                                   font-size: 11px; 
+                                   background: var(--success); 
+                                   color: white; 
+                                   border: none; 
+                                   border-radius: 6px; 
+                                   cursor: pointer;
+                                   font-weight: 600;">
+                        ✓ Setujui
+                    </button>
+                    <button onclick="rejectWithdrawal(${w.id})" 
+                            style="padding: 6px 12px; 
+                                   font-size: 11px; 
+                                   background: var(--danger); 
+                                   color: white; 
+                                   border: none; 
+                                   border-radius: 6px; 
+                                   cursor: pointer;
+                                   font-weight: 600;">
+                        ✗ Tolak
+                    </button>
+                </div>
+            `;
+        }
+
+        async function approveWithdrawal(id) {
+            showConfirm('Setujui Penarikan',
+                'Apakah Anda sudah mentransfer dana ke rekening/e-wallet user?\n\nKlik "Ya, Sudah Transfer" jika sudah melakukan transfer manual.',
+                async () => {
+                    try {
+                        const res = await fetch('/api/withdrawals/' + id + '/approve', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ adminNotes: 'Transfer berhasil' })
+                        });
+
+                        if (res.ok) {
+                            showToast('Penarikan berhasil dikonfirmasi! User akan mendapat notifikasi.', 'success');
+                            loadWithdrawalsData();
+                            loadDashboardData();
+                        } else {
+                            const data = await res.json();
+                            showToast(data.error || 'Gagal menyetujui penarikan.', 'error');
+                        }
+                    } catch (e) {
+                        console.error('Approve withdrawal error:', e);
+                        showToast('Terjadi kesalahan.', 'error');
+                    }
+                },
+                { type: 'info', confirmText: 'Ya, Sudah Transfer' }
+            );
+        }
+
+        async function rejectWithdrawal(id) {
+            const reason = prompt('Masukkan alasan penolakan (opsional):');
+
+            showConfirm('Tolak Penarikan',
+                'Yakin ingin menolak permintaan penarikan ini?',
+                async () => {
+                    try {
+                        const res = await fetch('/api/withdrawals/' + id + '/reject', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ adminNotes: reason || 'Ditolak oleh admin' })
+                        });
+
+                        if (res.ok) {
+                            showToast('Penarikan ditolak. User akan mendapat notifikasi.', 'success');
+                            loadWithdrawalsData();
+                        } else {
+                            const data = await res.json();
+                            showToast(data.error || 'Gagal menolak penarikan.', 'error');
+                        }
+                    } catch (e) {
+                        console.error('Reject withdrawal error:', e);
+                        showToast('Terjadi kesalahan.', 'error');
+                    }
+                },
+                { type: 'danger', confirmText: 'Tolak', danger: true }
+            );
+        }
+
+        // ===== REMINDER FUNCTIONS =====
+
+        async function loadRemindersData() {
+            try {
+                const res = await fetch('/api/reminders', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const reminders = await res.json();
+
+                const tbody = document.getElementById('remindersTable');
+                if (reminders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#9ca3af; padding: 40px;">Belum ada reminder. Klik tombol "Tambah Reminder" untuk membuat.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = reminders.map(r => `
+                    <tr>
+                        <td>#${r.id}</td>
+                        <td><strong>${r.user_name || '-'}</strong><br><small>${r.phone_number || ''}</small></td>
+                        <td>${r.partner_name || '<span style="color:#9ca3af">-</span>'}</td>
+                        <td><span class="badge" style="background: ${getFrequencyColor(r.frequency)}">${getFrequencyLabel(r.frequency)}</span></td>
+                        <td>${r.send_time || '09:00'}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${(r.custom_message || '').replace(/"/g, '&quot;')}">${r.custom_message ? '<i class="fas fa-comment-dots" style="color:#10b981"></i> Kustom' : '<span style="color:#9ca3af">Default</span>'}</td>
+                        <td>${r.is_active ? '<span class="badge bg-green">Aktif</span>' : '<span class="badge bg-red">Nonaktif</span>'}</td>
+                        <td>${r.last_sent ? new Date(r.last_sent).toLocaleString('id-ID') : '<span style="color:#9ca3af">Belum pernah</span>'}</td>
+                        <td style="white-space: nowrap;">
+                            <button class="btn-action" style="background:#10b981;" onclick="sendReminderNow(${r.id})" title="Kirim Sekarang">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                            <button class="btn-action btn-edit" onclick="editReminder(${r.id}, ${r.user_id}, '${r.frequency}', '${r.send_time || '09:00'}', '${encodeURIComponent(r.custom_message || '')}', ${r.is_active})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action btn-delete" onclick="deleteReminderItem(${r.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('Load reminders error:', e);
+                showToast('Gagal memuat data reminder.', 'error');
+            }
+        }
+
+        function getFrequencyLabel(freq) {
+            const labels = { daily: 'Harian', weekly: 'Mingguan', monthly: 'Bulanan' };
+            return labels[freq] || freq;
+        }
+
+        function getFrequencyColor(freq) {
+            const colors = { daily: '#dbeafe; color: #1e40af;', weekly: '#d1fae5; color: #065f46;', monthly: '#fef3c7; color: #92400e;' };
+            return colors[freq] || '#e5e7eb; color: #374151;';
+        }
+
+        // Reminder message templates
+        const reminderTemplates = {
+            default: `⏰ *REMINDER MENABUNG*
+
+Hai {name}! 👋
+
+Jangan lupa menabung hari ini ya! 💰
+
+Saldo kamu saat ini: Rp {saldo}
+
+Sedikit demi sedikit, lama-lama menjadi bukit! 🏔️
+
+Ketik /nabung [nominal] untuk mulai menabung.
+
+Semangat! 💪`,
+
+            motivasi: `💪 *SEMANGAT MENABUNG!*
+
+Hai {name}! 🌟
+
+"Masa depan diciptakan oleh apa yang kau lakukan hari ini, bukan besok." - Robert Kiyosaki
+
+💰 Saldo: Rp {saldo}
+
+Yuk sisihkan sedikit untuk masa depan!
+Ketik /nabung [nominal]
+
+Kamu pasti bisa! 🚀`,
+
+            target: `🎯 *PROGRESS TARGET TABUNGAN*
+
+Hai {name}! 📊
+
+Saldo kamu: Rp {saldo}
+
+Terus konsisten menabung untuk mencapai targetmu! 
+
+💡 Tips: Tabung minimal 10% dari penghasilan
+
+Ketik /nabung [nominal] untuk menabung
+Ketik /saldo untuk cek progress
+
+Semangat capai targetmu! 🏆`,
+
+            pasangan: `💕 *NABUNG BARENG YUK!*
+
+Hai {name}! 👫
+
+Sudah nabung hari ini belum?
+Ajak pasanganmu nabung bareng! 
+
+💰 Saldo gabungan: Rp {saldo}
+
+Menabung bersama, impian tercapai bersama! ✨
+
+Ketik /nabung [nominal]`,
+
+            hemat: `💰 *TIPS HEMAT HARI INI*
+
+Hai {name}! 💡
+
+Ingat: Belanjakan apa yang tersisa setelah menabung, bukan sebaliknya!
+
+📊 Saldo kamu: Rp {saldo}
+
+Tips hari ini:
+• Bawa bekal dari rumah
+• Kurangi jajan kopi
+• Catat pengeluaran harian
+
+Ketik /nabung [nominal] 💪`,
+
+            custom: ``
+        };
+
+        function applyReminderTemplate() {
+            const template = document.getElementById('reminderTemplate').value;
+            const textarea = document.getElementById('reminderCustomMessage');
+
+            if (reminderTemplates[template] !== undefined) {
+                textarea.value = reminderTemplates[template];
+            }
+
+            // Enable/disable textarea based on template
+            if (template === 'custom') {
+                textarea.placeholder = 'Tulis pesan kustom Anda di sini...';
+                textarea.focus();
+            } else {
+                textarea.placeholder = '';
+            }
+        }
+
+        function selectAllReminderUsers() {
+            const select = document.getElementById('reminderUserId');
+            for (let i = 0; i < select.options.length; i++) {
+                select.options[i].selected = true;
+            }
+        }
+
+        function deselectAllReminderUsers() {
+            const select = document.getElementById('reminderUserId');
+            for (let i = 0; i < select.options.length; i++) {
+                select.options[i].selected = false;
+            }
+        }
+
+        async function openAddReminder() {
+            document.getElementById('reminderModalTitle').textContent = '➕ Tambah Reminder';
+            document.getElementById('editReminderId').value = '';
+            document.getElementById('reminderFrequency').value = 'daily';
+            document.getElementById('reminderSendTime').value = '09:00';
+            document.getElementById('reminderTemplate').value = 'default';
+            document.getElementById('reminderCustomMessage').value = reminderTemplates.default;
+            document.getElementById('reminderIsActive').checked = true;
+
+            // Load users for dropdown
+            try {
+                const res = await fetch('/api/users', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const users = await res.json();
+
+                const select = document.getElementById('reminderUserId');
+                select.innerHTML = '';
+                select.disabled = false;
+                users.forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u.id;
+                    option.textContent = u.name + ' (' + u.phone_number + ')' + (u.partner_phone ? ' 👫' : '');
+                    select.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Failed to load users:', e);
+            }
+
+            document.getElementById('reminderModal').style.display = 'flex';
+        }
+
+        async function editReminder(id, userId, frequency, sendTime, customMessage, isActive) {
+            // Decode the URI-encoded custom message
+            const decodedMessage = customMessage ? decodeURIComponent(customMessage) : '';
+
+            document.getElementById('reminderModalTitle').textContent = '✏️ Edit Reminder';
+            document.getElementById('editReminderId').value = id;
+            document.getElementById('reminderFrequency').value = frequency;
+            document.getElementById('reminderSendTime').value = sendTime;
+            document.getElementById('reminderCustomMessage').value = decodedMessage || reminderTemplates.default;
+            document.getElementById('reminderIsActive').checked = isActive == 1;
+
+            // Detect which template matches
+            let matchedTemplate = 'custom';
+            for (const [key, value] of Object.entries(reminderTemplates)) {
+                if (value && decodedMessage === value) {
+                    matchedTemplate = key;
+                    break;
+                }
+            }
+            document.getElementById('reminderTemplate').value = matchedTemplate;
+
+            // Load users and pre-select
+            try {
+                const res = await fetch('/api/users', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const users = await res.json();
+
+                const select = document.getElementById('reminderUserId');
+                select.innerHTML = '';
+                select.disabled = true; // Can't change user when editing
+                users.forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u.id;
+                    option.textContent = u.name + ' (' + u.phone_number + ')';
+                    if (u.id === userId) option.selected = true;
+                    select.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Failed to load users:', e);
+            }
+
+            document.getElementById('reminderModal').style.display = 'flex';
+        }
+
+        function closeReminderModal() {
+            document.getElementById('reminderModal').style.display = 'none';
+        }
+
+        async function saveReminder() {
+            const id = document.getElementById('editReminderId').value;
+            const select = document.getElementById('reminderUserId');
+            const selectedUserIds = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+            const frequency = document.getElementById('reminderFrequency').value;
+            const sendTime = document.getElementById('reminderSendTime').value;
+            const customMessage = document.getElementById('reminderCustomMessage').value.trim();
+            const isActive = document.getElementById('reminderIsActive').checked;
+
+            if (!id && selectedUserIds.length === 0) {
+                showToast('Pilih minimal 1 user!', 'warning');
+                return;
+            }
+
+            try {
+                if (id) {
+                    // Update single reminder
+                    const res = await fetch('/api/reminders/' + id, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ frequency, send_time: sendTime, custom_message: customMessage || null, is_active: isActive })
+                    });
+
+                    if (res.ok) {
+                        showToast('Reminder berhasil diupdate!', 'success');
+                        closeReminderModal();
+                        loadRemindersData();
+                    } else {
+                        const data = await res.json();
+                        showToast(data.error || 'Gagal menyimpan reminder.', 'error');
+                    }
+                } else {
+                    // Create reminders for multiple users
+                    let successCount = 0;
+                    let failCount = 0;
+
+                    for (const userId of selectedUserIds) {
+                        try {
+                            const res = await fetch('/api/reminders', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ user_id: userId, frequency, send_time: sendTime, custom_message: customMessage || null, is_active: isActive })
+                            });
+
+                            if (res.ok) {
+                                successCount++;
+                            } else {
+                                failCount++;
+                            }
+                        } catch (e) {
+                            failCount++;
+                        }
+                    }
+
+                    if (successCount > 0) {
+                        showToast(`${successCount} reminder berhasil ditambahkan!` + (failCount > 0 ? ` (${failCount} gagal)` : ''), successCount > 0 ? 'success' : 'warning');
+                        closeReminderModal();
+                        loadRemindersData();
+                    } else {
+                        showToast('Gagal menambahkan reminder.', 'error');
+                    }
+                }
+            } catch (e) {
+                console.error('Save reminder error:', e);
+                showToast('Terjadi kesalahan.', 'error');
+            }
+        }
+
+        function deleteReminderItem(id) {
+            showConfirm('Hapus Reminder', 'Yakin ingin menghapus reminder ini?', async () => {
+                try {
+                    const res = await fetch('/api/reminders/' + id, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    });
+
+                    if (res.ok) {
+                        showToast('Reminder berhasil dihapus!', 'success');
+                        loadRemindersData();
+                    } else {
+                        showToast('Gagal menghapus reminder.', 'error');
+                    }
+                } catch (e) {
+                    console.error('Delete reminder error:', e);
+                    showToast('Terjadi kesalahan.', 'error');
+                }
+            }, { type: 'danger', confirmText: 'Hapus', danger: true });
+        }
+
+        async function sendReminderNow(id) {
+            showConfirm('Kirim Reminder', 'Kirim reminder ke user ini sekarang?', async () => {
+                showToast('Mengirim reminder...', 'info');
+                try {
+                    const res = await fetch('/api/reminders/' + id + '/send', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    });
+
+                    if (res.ok) {
+                        showToast('Reminder berhasil dikirim!', 'success');
+                        loadRemindersData();
+                    } else {
+                        const data = await res.json();
+                        showToast(data.error || 'Gagal mengirim reminder.', 'error');
+                    }
+                } catch (e) {
+                    console.error('Send reminder error:', e);
+                    showToast('Terjadi kesalahan.', 'error');
+                }
+            }, { confirmText: 'Kirim' });
+        }
+
+        // Close reminder modal when clicking outside
+        window.addEventListener('click', function (event) {
+            const reminderModal = document.getElementById('reminderModal');
+            if (event.target === reminderModal) {
+                closeReminderModal();
+            }
+        });
+
+        // ===== EXPENSE FUNCTIONS =====
+        let expensePieChart = null;
+
+        async function loadExpenses() {
+            try {
+                const month = document.getElementById('expenseMonthFilter').value;
+                const token = localStorage.getItem('token');
+
+                // Fetch expenses and summary
+                const [expensesRes, summaryRes] = await Promise.all([
+                    fetch('/api/expenses', { headers: { 'Authorization': 'Bearer ' + token } }),
+                    fetch('/api/expenses/summary?month=' + month, { headers: { 'Authorization': 'Bearer ' + token } })
+                ]);
+
+                const expenses = await expensesRes.json();
+                const summaryData = await summaryRes.json();
+
+                // Update stats
+                document.getElementById('totalExpenses').textContent = 'Rp ' + (summaryData.total || 0).toLocaleString('id-ID');
+                document.getElementById('expenseCount').textContent = expenses.length || 0;
+
+                // Find top category
+                if (summaryData.summary && summaryData.summary.length > 0) {
+                    const top = summaryData.summary[0];
+                    document.getElementById('topCategory').textContent = (top.category_icon || '') + ' ' + (top.category_name || top.category);
+                } else {
+                    document.getElementById('topCategory').textContent = '-';
+                }
+
+                // Render pie chart
+                renderExpensePieChart(summaryData.summary || []);
+
+                // Render table
+                const tbody = document.getElementById('expenseTableBody');
+                if (expenses.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;">Tidak ada data pengeluaran</td></tr>';
+                } else {
+                    tbody.innerHTML = expenses.map(e => {
+                        const date = new Date(e.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                        return `<tr>
+                            <td>${date}</td>
+                            <td>${e.category_icon || ''} ${e.category_name || e.category}</td>
+                            <td style="color:#ef4444;font-weight:600;">Rp ${e.amount.toLocaleString('id-ID')}</td>
+                            <td>${e.description || '-'}</td>
+                            <td>${e.user_name || '-'}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                // Populate month filter if empty
+                populateMonthFilter(expenses);
+
+            } catch (error) {
+                console.error('Load expenses error:', error);
+                showToast('Gagal memuat data pengeluaran', 'error');
+            }
+        }
+
+        function renderExpensePieChart(summary) {
+            const ctx = document.getElementById('expensePieChart').getContext('2d');
+
+            if (expensePieChart) {
+                expensePieChart.destroy();
+            }
+
+            if (summary.length === 0) {
+                return;
+            }
+
+            const labels = summary.map(s => (s.category_icon || '') + ' ' + (s.category_name || s.category));
+            const data = summary.map(s => s.total);
+            const colors = summary.map(s => s.category_color || '#6b7280');
+
+            expensePieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function populateMonthFilter(expenses) {
+            const select = document.getElementById('expenseMonthFilter');
+            if (select.options.length > 1) return; // Already populated
+
+            const months = new Set();
+            expenses.forEach(e => {
+                const month = e.created_at.slice(0, 7);
+                months.add(month);
+            });
+
+            Array.from(months).sort().reverse().forEach(m => {
+                const date = new Date(m + '-01');
+                const label = date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = label;
+                select.appendChild(option);
+            });
+        }
+
+        // Export functions
+        function exportExpensePDF() {
+            const token = localStorage.getItem('token');
+            const month = document.getElementById('expenseMonthFilter').value;
+            showToast('Mengunduh PDF...', 'info');
+            window.open(`/api/expenses/export/pdf?month=${month}&token=${token}`, '_blank');
+        }
+
+        function exportExpenseExcel() {
+            const token = localStorage.getItem('token');
+            const month = document.getElementById('expenseMonthFilter').value;
+            showToast('Mengunduh Excel...', 'info');
+            window.open(`/api/expenses/export/excel?month=${month}&token=${token}`, '_blank');
+        }
+
+        // Transaction Export functions
+        function exportTransactionsPDF() {
+            const token = localStorage.getItem('token');
+            showToast('Mengunduh PDF Transaksi...', 'info');
+            window.open(`/api/transactions/export/pdf?token=${token}`, '_blank');
+        }
+
+        function exportTransactionsExcel() {
+            const token = localStorage.getItem('token');
+            showToast('Mengunduh Excel Transaksi...', 'info');
+            window.open(`/api/transactions/export/excel?token=${token}`, '_blank');
+        }
+    </script>
+</body>
+
+</html>
